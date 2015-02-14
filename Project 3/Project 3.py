@@ -106,6 +106,9 @@ def main():
     
     #declare other stuff
     Target=None # target of Drag/Drop
+    MouseDown = False
+    MousePressed = False
+    MouseReleased = False
     running=True
     font = pygame.font.SysFont('Calibri', 25, True, False)
     clock = pygame.time.Clock()
@@ -152,14 +155,10 @@ def main():
         score = font.render(str(robot.score), True, (0,100,0))
         screen.blit(score, [1100, 500])
         
-        selectObjects(screen, mouse)
+        Target, MouseDown,MousePressed, MouseReleased = selectObjects(screen, mouse, Target, MouseDown,MousePressed, MouseReleased)
         
         #move robot
         robot.hunt(5)
-        
-        #if mouse[0]<950:
-        #   robot.rect.x = mouse[0]
-        #   robot.rect.y = mouse[1]
         
         # Check the list of collisions.
         for trap in traps_hit_list:
@@ -172,7 +171,6 @@ def main():
             except IndexError:
                 pass
         if traps_left==0:
-            print "lol"
             traps_left = generate_traps(10)
             
         for treasure in treasure_hit:
@@ -221,8 +219,16 @@ def generate_treasure(number, treasureType):
         all_sprites_list.add(treasure)
         
 def terminate():
+    print "quit"
+    running = False
     pygame.quit()
     sys.exit()
+
+def releasedMouse():
+    for Event in pygame.event.get():
+        if Event.type == pygame.MOUSEBUTTONUP:
+            return True
+    return False
 
 def refreshScreen(screen,treasure_map):
         #clear screen
@@ -233,31 +239,30 @@ def refreshScreen(screen,treasure_map):
         # draw objects
         all_sprites_list.draw(screen)
 
-
-def checkForClick():
+            
+def selectObjects(screen, mouse, Target, MouseDown,MousePressed, MouseReleased):
             for Event in pygame.event.get():
                 if Event.type == pygame.MOUSEBUTTONDOWN:
                     MousePressed=True 
                     MouseDown=True 
-                   
+                    MouseReleased=False
                 if Event.type == pygame.MOUSEBUTTONUP:
+                    MousePressed=False
                     MouseReleased=True
                     MouseDown=False
-            return MousePressed, MouseDown, MouseReleased
-            #if MousePressed==True:
-            
-def selectObjects(screen, mouse):
-            if mouseClick():
-                for treasure in all_sprites_list: # search all items
-                        print "click"
-                        treasure.rect.collidepoint(mouse)
-                        Target=treasure # "pick up" item
-                if  Target is not None: # if we are dragging something
-                    print "click"
-                    Target.x=mouse[0] # move the target with us
-                    Target.y=mouse[1]
-            #if MouseReleased:
-            #    Target=None # Drop item, if we have any
+
+            if MousePressed==True:
+                if Target is None:
+                    for treasure in treasure_list: # search all items
+                            if treasure.rect.collidepoint(mouse):
+                                Target=treasure # "pick up" item
+            if MouseDown and Target is not None: # if dragging
+                if mouse[0]<960:
+                    Target.rect.x=mouse[0]-50 # move the item
+                    Target.rect.y=mouse[1]-50
+            if MouseReleased:
+                Target=None # drop item
+            return Target, MouseDown,MousePressed, MouseReleased
 
 
  
