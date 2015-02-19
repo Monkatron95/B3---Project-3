@@ -95,21 +95,20 @@ class Button():
 
 class TreasureList():
     
-    def __init__(self, x, y, width, height, text, color, items):
+    def __init__(self, x, y, width, height, text, color):
         self.x=x
         self.y=y
         self.width=width
         self.height=height
         self.text = text
         self.color=color
-        self.items=items
         
-    def update(self):
+    def update(self, items):
         position=self.x+20        
         pygame.draw.rect(screen, self.color,(self.x,self.y,self.width,self.height))
         screen.blit(self.text, [self.x+(self.width/2), self.y+(self.height/4)])
         try:
-                 for item in self.items:
+                 for item in items:
                      if position <1000:
                          try:
                              temp = item.value
@@ -126,6 +125,31 @@ class TreasureList():
         except IndexError:
                  pass
 
+class Timer():
+    def __init__(self, x, y, width, height, color, font):
+        self.x=x
+        self.y=y
+        self.width=width
+        self.height=height
+        self.color=color
+        self.font=font
+        self.frame_count=0
+        self.total_seconds=-1
+        self.seconds=0
+        self.minutes=0
+    def update(self):
+        pygame.draw.rect(screen, (0,0,0),(self.x-2,self.y,60,40))
+        if self.total_seconds is not 0:
+            self.total_seconds = 60 - pygame.time.get_ticks()/1000# // 60
+            if self.total_seconds < 0:
+                self.total_seconds = 0
+            self.minutes = self.total_seconds // 60
+            self.seconds = self.total_seconds % 60
+        time = "{00:00}:{01:02}".format(self.minutes, self.seconds)
+        timer=self.font.render(time, True, (255,255,255))
+        screen.blit(timer, [self.x+7, self.y+2])
+
+        
 # -------- Main Program -----------
 def main():
     #set up variables
@@ -134,7 +158,7 @@ def main():
     #set up main screen size and color
     global screen, mouse
     screen=pygame.display.set_mode((1280,720))
-    screen.fill((200,200,200))
+    #screen.fill((200,200,200))
     
     #declare images
     treasure_map = pygame.image.load("map.png")
@@ -159,10 +183,12 @@ def main():
     running=True
     pause = False
     font = pygame.font.SysFont('Calibri', 25)
-    digital_font = pygame.font.Font('system.ttf', 25)
+    system_font = pygame.font.Font('system.ttf', 25)
+    digital_font = pygame.font.Font('digital.ttf', 35)
     button_font = pygame.font.SysFont('Calibri', 20, True, False)
     small_font = pygame.font.SysFont('Calibri', 15, True, False)
     clock = pygame.time.Clock()
+    timer =  Timer( 1150, 280, 300, 100, (0,0,0), digital_font)
 
     #declare lists
     global all_sprites_list, trap_list, treasure_list, found_list, wish_list
@@ -182,6 +208,7 @@ def main():
     text_add=font.render("Add treasure:", True, (154,154,154))
     text_score=font.render("Score:", True, (154,154,154))
     text_wishlist=font.render("Request:", True, (154,154,154))
+    text_timer=font.render("Time left::", True, (154,154,154))
     
     #declare buttons
     goldButton= Button(1010, 130, 80, 30, button_font.render("Gold", True, (184,134,11)) , (255,215,0), (255,235,0))
@@ -191,27 +218,30 @@ def main():
     goldwishlistButton= Button(1120, 190, 30, 30, button_font.render(" +", True, (184,134,11)) , (255,215,0), (255,235,0))
     silverwishlistButton= Button(1170, 190, 30, 30, button_font.render(" +", True, (105,105,105)) , (160,160,160), (172,172,172))
     bronzewishlistButton= Button(1220, 190, 30, 30, button_font.render(" +", True, (184,134,11)) , (218,165,32), (238,195,52))
-
+    clearwishlistButton= Button(1110, 230, 150, 30, button_font.render("clear wishlist", True, (137,74,74)) , (161,161,161), (171,171,171))
+    
     pauseButton= Button(1080, 660, 80, 30, button_font.render("Pause", True, (204, 204, 204)), (123, 123, 123), (102, 102, 102))    
     quitButton= Button(1180, 660, 80, 30, button_font.render("Quit", True, (204, 0, 0)), (153, 0, 0), (102, 0, 0))
 
-    FoundList=TreasureList( 0, 0, 1000, 20, small_font.render("found treasures", True, (100,100,100)), (60,60,60), found_list)
-    WishList=TreasureList( 0, 700, 1000, 20, small_font.render("wishlist", True, (100,100,100)), (60,60,60), wish_list)
+    FoundList=TreasureList( 0, 0, 1000, 20, small_font.render("found treasures", True, (100,100,100)), (60,60,60))
+    WishList=TreasureList( 0, 700, 1000, 20, small_font.render("wishlist", True, (100,100,100)), (60,60,60))
 
     while running:
-        
         #obtain mouse position
         mouse=pygame.mouse.get_pos()
         
         #update screen and screen items
-        refreshScreen(treasure_map, text_add, text_score, text_wishlist)
-        refreshButtons(goldButton, silverButton, bronzeButton, goldwishlistButton, silverwishlistButton, bronzewishlistButton, pauseButton, quitButton)
+        refreshScreen(treasure_map, text_add, text_score, text_wishlist, text_timer)
+        refreshButtons(goldButton, silverButton, bronzeButton, goldwishlistButton, silverwishlistButton, bronzewishlistButton,clearwishlistButton, pauseButton, quitButton)
 
-        displayScore(1100,60,digital_font,robot)
+        displayScore(1100,60,system_font,robot)
         
         #select and move treasures
         selectObjects(treasure_list)
 
+        timer.update()
+
+        #pause function
         if pause is not True:
             #move robot
             robot.hunt(5)
@@ -220,12 +250,10 @@ def main():
         traps_hit_list = pygame.sprite.spritecollide(robot, trap_list, True)
         treasure_hit = pygame.sprite.spritecollide(robot, treasure_list, True)
         found_list.add(treasure_hit)
-        
-
 
         #update GUI lists
-        FoundList.update()
-        WishList.update()
+        FoundList.update(found_list)
+        WishList.update(wish_list)
         
         # Check the list of collisions.
         for trap in traps_hit_list:
@@ -246,15 +274,18 @@ def main():
             except IndexError:
                 pass
             
-            print( robot.score )
-            
-        pygame.display.flip()
+
         clock.tick(60)
-        #checkForQuit()
+        checkForQuit()
+        pygame.display.flip()
     return # End of main program
 
 
 #functions
+def clear_wishlist():
+    global wish_list
+    wish_list= []
+    
 def pause_movement():
     global pause
     pause= not pause
@@ -263,7 +294,8 @@ def displayScore(x,y,digital_font,robot):
         #update and display score
         pygame.draw.rect(screen, (0,0,0),(x-2,y,100,24))
         score = digital_font.render(str(robot.score), True, (255,255,255))
-        screen.blit(score, [x, y])    
+        screen.blit(score, [x, y])
+        
 def mouseClick():
     for Event in pygame.event.get():
                 if Event.type == pygame.MOUSEBUTTONDOWN:
@@ -296,7 +328,6 @@ def generate_treasure(treasureType):
 
 def addToWishlist(item):
     wish_list.append(item)
-    print wish_list
         
 def terminate():
     running = False
@@ -309,7 +340,7 @@ def releasedMouse():
             return True
     return False
 
-def refreshScreen(background,text_add,text_score,text_wishlist):
+def refreshScreen(background,text_add,text_score,text_wishlist,text_timer):
         #clear screen
         screen.fill((200,200,200))
         # clear drawing screen
@@ -317,10 +348,11 @@ def refreshScreen(background,text_add,text_score,text_wishlist):
         screen.blit(text_add, [1070,100])
         screen.blit(text_score, [1110,20])
         screen.blit(text_wishlist, [1010,190])
+        screen.blit(text_timer, [1010,290])
         # draw objects
         all_sprites_list.draw(screen)
         
-def refreshButtons(goldButton, silverButton, bronzeButton, goldwishlistButton, silverwishlistButton, bronzewishlistButton, pauseButton, quitButton):
+def refreshButtons(goldButton, silverButton, bronzeButton, goldwishlistButton, silverwishlistButton, bronzewishlistButton, clearwishlistButton, pauseButton, quitButton):
         #update buttons
         goldButton.update(generate_treasure, gold)
         silverButton.update(generate_treasure, silver)
@@ -328,6 +360,7 @@ def refreshButtons(goldButton, silverButton, bronzeButton, goldwishlistButton, s
         goldwishlistButton.update(addToWishlist, 300)
         silverwishlistButton.update(addToWishlist, 200)
         bronzewishlistButton.update(addToWishlist, 100)
+        clearwishlistButton.update(clear_wishlist, None)
         pauseButton.update(pause_movement, None)
         quitButton.update(terminate, None)
             
@@ -357,12 +390,12 @@ def selectObjects(object_list):
             return Target, MouseDown,MousePressed, MouseReleased
 
 def checkForQuit():
-    Event = pygame.event.wait()
-    if Event.type == QUIT:
-        terminate()
-    if Event.type == KEYDOWN:
-        if Event.key == K_ESCAPE:
+     for Event in pygame.event.get():
+        if Event.type == QUIT:
             terminate()
+        if Event.type == KEYDOWN:
+            if Event.key == K_ESCAPE:
+                terminate()
 
 if __name__ == '__main__':
     main() # Execute main function
