@@ -121,7 +121,7 @@ def main():
     global treasure_list
     treasure_list = pygame.sprite.Group() # all treasures
     global found_list
-    found_list=pygame.sprite.OrderedUpdates() # found treasures
+    found_list=pygame.sprite.Group()#OrderedUpdates() # found treasures
     global found
     found=[]
     # declare robot

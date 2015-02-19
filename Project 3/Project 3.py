@@ -5,9 +5,6 @@ from pygame.locals import *
 # Initialize the game engine
 pygame.init()
 
-#obtaining project root folder
-path = sys.path[0]
-
 #classes
 
 class Block(pygame.sprite.Sprite):
@@ -48,18 +45,26 @@ class Robot(Block):
     def hunt(self, speed):
         #for treasure in treasure_list:
         try:
-            treasure = treasure_list.sprites()[0]
-            if abs(self.rect.x - treasure.rect.x)>=speed:
-                if self.rect.x > treasure.rect.x:
+            target = treasure_list.sprites()[0]
+            try:
+                for treasure in treasure_list:
+                    if treasure.value == wish_list[0]:
+                        target=treasure
+                        break
+            except IndexError:
+                pass
+    
+            if abs(self.rect.x - target.rect.x)>=speed:
+                if self.rect.x > target.rect.x:
                     self.rect.x -=speed
-                elif self.rect.x < treasure.rect.x:
+                elif self.rect.x < target.rect.x:
                     self.rect.x +=speed
             else:
                 self.rect.x += 0
-            if abs(self.rect.y - treasure.rect.y)>=speed:
-                if self.rect.y > treasure.rect.y:
+            if abs(self.rect.y - target.rect.y)>=speed:
+                if self.rect.y > target.rect.y:
                     self.rect.y -=speed
-                elif self.rect.y < treasure.rect.y:
+                elif self.rect.y < target.rect.y:
                     self.rect.y +=speed
             else:
                 self.rect.y += 0
@@ -67,7 +72,7 @@ class Robot(Block):
            pass
         
 class Button():
-    def __init__(self, x, y, width, height, text, color, active_color, font,selected):
+    def __init__(self, x, y, width, height, text, color, active_color):
         self.x=x
         self.y=y
         self.width=width
@@ -75,8 +80,6 @@ class Button():
         self.text = text
         self.color=color
         self.active_color=active_color
-        self.font=font
-        self.selected=selected
     #def 
     def update(self, action, condition):
         if self.x+self.width > mouse[0] > self.x and self.y+self.height > mouse[1] > self.y:
@@ -88,9 +91,41 @@ class Button():
                     action()
         else:
             pygame.draw.rect(screen, self.color,(self.x,self.y,self.width,self.height))
-        screen.blit(self.text, [self.x+(self.width/3), self.y+(self.height/3)])
+        screen.blit(self.text, [self.x+(self.width/6), self.y+(self.height/5)])
 
-              
+class TreasureList():
+    
+    def __init__(self, x, y, width, height, text, color, items):
+        self.x=x
+        self.y=y
+        self.width=width
+        self.height=height
+        self.text = text
+        self.color=color
+        self.items=items
+        
+    def update(self):
+        position=self.x+20        
+        pygame.draw.rect(screen, self.color,(self.x,self.y,self.width,self.height))
+        screen.blit(self.text, [self.x+(self.width/2), self.y+(self.height/4)])
+        try:
+                 for item in self.items:
+                     if position <1000:
+                         try:
+                             temp = item.value
+                         except AttributeError:
+                             temp=item
+                         if temp == 300:
+                             color = (255,215,0)
+                         elif temp == 200:
+                             color = (160, 160, 160)
+                         elif temp==100:
+                             color = (184,134,11) 
+                         pygame.draw.circle(screen, color,(position, self.y+self.height/2), self.height/3, 0)
+                         position=position+self.height/3+20
+        except IndexError:
+                 pass
+
 # -------- Main Program -----------
 def main():
     #set up variables
@@ -103,6 +138,10 @@ def main():
     
     #declare images
     treasure_map = pygame.image.load("map.png")
+    global gold_small, silver_small, bronze_small
+    gold_small=pygame.image.load("wishlist_gold.gif")
+    silver_small=pygame.image.load("wishlist_silver.gif")
+    bronze_small=pygame.image.load("wishlist_bronze.gif")
 
     #declare treasure types
     global gold, silver, bronze
@@ -110,35 +149,54 @@ def main():
     silver=Treasure(200, "treasure_silver.gif")
     bronze=Treasure(100, "treasure_bronze.gif")
     
+    
     #declare other stuff
-    global Target, MouseDown, MousePressed, MouseReleased, running
+    global Target, MouseDown, MousePressed, MouseReleased, running, pause
     Target=None # target of Drag/Drop
     MouseDown = False
     MousePressed = False
     MouseReleased = False
     running=True
-    font = pygame.font.SysFont('Calibri', 25, True, False)
+    pause = False
+    font = pygame.font.SysFont('Calibri', 25)
+    digital_font = pygame.font.Font('system.ttf', 25)
+    button_font = pygame.font.SysFont('Calibri', 20, True, False)
+    small_font = pygame.font.SysFont('Calibri', 15, True, False)
     clock = pygame.time.Clock()
 
     #declare lists
-    global all_sprites_list, trap_list, treasure_list, found_list
+    global all_sprites_list, trap_list, treasure_list, found_list, wish_list
     all_sprites_list = pygame.sprite.Group() # all sprites
     trap_list = pygame.sprite.Group() # all traps
     treasure_list = pygame.sprite.Group() # all treasures
-    found_list=pygame.sprite.Group() # found treasures
+    found_list=pygame.sprite.OrderedUpdates() # found treasures
+    wish_list=[]# wish list
     
     # declare robot
     robot = Robot(0, "robot.gif")
     all_sprites_list.add(robot)
+    robot.rect.x=random.randrange(900)
+    robot.rect.y=random.randrange(100,650)
+
+    #declare text
+    text_add=font.render("Add treasure:", True, (154,154,154))
+    text_score=font.render("Score:", True, (154,154,154))
+    text_wishlist=font.render("Request:", True, (154,154,154))
     
     #declare buttons
-    goldButton= Button(1050, 30, 180, 70, font.render("Gold", True, (184,134,11)) , (255,215,0), (255,235,0), "arial", False)
-    silverButton= Button(1050, 130, 180, 70, font.render("Silver", True, (105,105,105)), (160,160,160), (172,172,172), "arial", False)
-    bronzeButton= Button(1050, 230, 180, 70, font.render("Bronze", True, (184,134,11)), (218,165,32), (238,195,52), "arial", False)
-    quitButton= Button(1050, 630, 180, 70, font.render("Quit", True, (204, 0, 0)), (153, 0, 0), (102, 0, 0), "arial", False)
+    goldButton= Button(1010, 130, 80, 30, button_font.render("Gold", True, (184,134,11)) , (255,215,0), (255,235,0))
+    silverButton= Button(1100, 130, 80, 30, button_font.render("Silver", True, (105,105,105)), (160,160,160), (172,172,172))
+    bronzeButton= Button(1190, 130, 80, 30, button_font.render("Bronze", True, (184,134,11)), (218,165,32), (238,195,52))
 
+    goldwishlistButton= Button(1120, 190, 30, 30, button_font.render(" +", True, (184,134,11)) , (255,215,0), (255,235,0))
+    silverwishlistButton= Button(1170, 190, 30, 30, button_font.render(" +", True, (105,105,105)) , (160,160,160), (172,172,172))
+    bronzewishlistButton= Button(1220, 190, 30, 30, button_font.render(" +", True, (184,134,11)) , (218,165,32), (238,195,52))
 
-    
+    pauseButton= Button(1080, 660, 80, 30, button_font.render("Pause", True, (204, 204, 204)), (123, 123, 123), (102, 102, 102))    
+    quitButton= Button(1180, 660, 80, 30, button_font.render("Quit", True, (204, 0, 0)), (153, 0, 0), (102, 0, 0))
+
+    FoundList=TreasureList( 0, 0, 1000, 20, small_font.render("found treasures", True, (100,100,100)), (60,60,60), found_list)
+    WishList=TreasureList( 0, 700, 1000, 20, small_font.render("wishlist", True, (100,100,100)), (60,60,60), wish_list)
 
     while running:
         
@@ -146,14 +204,17 @@ def main():
         mouse=pygame.mouse.get_pos()
         
         #update screen and screen items
-        refreshScreen(treasure_map)
-        refreshButtons(goldButton, silverButton, bronzeButton, quitButton)
+        refreshScreen(treasure_map, text_add, text_score, text_wishlist)
+        refreshButtons(goldButton, silverButton, bronzeButton, goldwishlistButton, silverwishlistButton, bronzewishlistButton, pauseButton, quitButton)
 
+        displayScore(1100,60,digital_font,robot)
+        
         #select and move treasures
         selectObjects(treasure_list)
-        
-        #move robot
-        robot.hunt(5)
+
+        if pause is not True:
+            #move robot
+            robot.hunt(5)
 
         #check collision
         traps_hit_list = pygame.sprite.spritecollide(robot, trap_list, True)
@@ -161,19 +222,15 @@ def main():
         found_list.add(treasure_hit)
         
 
-        
-        #update and display score
-        score = font.render(str(robot.score), True, (0,100,0))
-        screen.blit(score, [1100, 500])
-        
 
+        #update GUI lists
+        FoundList.update()
+        WishList.update()
         
         # Check the list of collisions.
         for trap in traps_hit_list:
-            traps_left-=1
-            print traps_left
             try:
-                last = found_list.sprites()[0]
+                last = found_list.sprites()[-1]
                 robot.score -= last.value
                 found_list.remove(last)
             except IndexError:
@@ -183,15 +240,30 @@ def main():
             
         for treasure in treasure_hit:
             robot.score += treasure.value
+            try:
+                if treasure.value == wish_list[0]:
+                    wish_list.pop(0)
+            except IndexError:
+                pass
+            
             print( robot.score )
             
         pygame.display.flip()
         clock.tick(60)
-        checkForQuit()
+        #checkForQuit()
     return # End of main program
 
 
 #functions
+def pause_movement():
+    global pause
+    pause= not pause
+    
+def displayScore(x,y,digital_font,robot):
+        #update and display score
+        pygame.draw.rect(screen, (0,0,0),(x-2,y,100,24))
+        score = digital_font.render(str(robot.score), True, (255,255,255))
+        screen.blit(score, [x, y])    
 def mouseClick():
     for Event in pygame.event.get():
                 if Event.type == pygame.MOUSEBUTTONDOWN:
@@ -215,12 +287,16 @@ def generate_treasure(treasureType):
         treasure = Treasure(treasureType.value, treasureType.filename)
 
         # Set a random location for the block
-        treasure .rect.x = random.randrange(900)
-        treasure .rect.y = random.randrange(650)
+        treasure.rect.x = random.randrange(900)
+        treasure.rect.y = random.randrange(650)
             
         # Add the block to the list of objects
         treasure_list.add(treasure)
         all_sprites_list.add(treasure)
+
+def addToWishlist(item):
+    wish_list.append(item)
+    print wish_list
         
 def terminate():
     running = False
@@ -233,20 +309,26 @@ def releasedMouse():
             return True
     return False
 
-def refreshScreen(background):
+def refreshScreen(background,text_add,text_score,text_wishlist):
         #clear screen
         screen.fill((200,200,200))
         # clear drawing screen
         screen.blit(background, (0,0))
-        #pygame.draw.rect(screen, (235, 235, 235) , [0, 0, 1000, 720])
+        screen.blit(text_add, [1070,100])
+        screen.blit(text_score, [1110,20])
+        screen.blit(text_wishlist, [1010,190])
         # draw objects
         all_sprites_list.draw(screen)
         
-def refreshButtons(goldButton, silverButton, bronzeButton, quitButton):
+def refreshButtons(goldButton, silverButton, bronzeButton, goldwishlistButton, silverwishlistButton, bronzewishlistButton, pauseButton, quitButton):
         #update buttons
         goldButton.update(generate_treasure, gold)
         silverButton.update(generate_treasure, silver)
         bronzeButton.update(generate_treasure, bronze)
+        goldwishlistButton.update(addToWishlist, 300)
+        silverwishlistButton.update(addToWishlist, 200)
+        bronzewishlistButton.update(addToWishlist, 100)
+        pauseButton.update(pause_movement, None)
         quitButton.update(terminate, None)
             
 def selectObjects(object_list):
@@ -267,7 +349,7 @@ def selectObjects(object_list):
                             if treasure.rect.collidepoint(mouse):
                                 Target=treasure # "pick up" item
             if MouseDown and Target is not None: # if dragging
-                if mouse[0]<960:
+                if mouse[0]<960 and 680>mouse[1]>40:
                     Target.rect.x=mouse[0]-50 # move the item
                     Target.rect.y=mouse[1]-50
             if MouseReleased:
@@ -275,11 +357,10 @@ def selectObjects(object_list):
             return Target, MouseDown,MousePressed, MouseReleased
 
 def checkForQuit():
-    Event = pygame.event.wait ()
+    Event = pygame.event.wait()
     if Event.type == QUIT:
         terminate()
     if Event.type == KEYDOWN:
-        print Event.key
         if Event.key == K_ESCAPE:
             terminate()
 
