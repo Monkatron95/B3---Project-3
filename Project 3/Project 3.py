@@ -43,8 +43,9 @@ class Robot(Block):
         self.score=score
         self.speed=random.randrange(1,10)
         super(Robot, self).__init__(filename)
+        
     def hunt(self):
-        #for treasure in treasure_list:
+        self.checkForCollision()
         try:
             target = treasure_list.sprites()[0]
             try:
@@ -71,12 +72,42 @@ class Robot(Block):
                 self.rect.y += 0
         except IndexError:
            pass
+        
     def adjustSpeed(self, value):
         self.speed+=value
         if 10<self.speed:
             self.speed=10
         elif self.speed<1:
             self.speed=1
+            
+    def checkForCollision(self):
+        global traps_left
+     
+        #check collision
+        traps_hit_list = pygame.sprite.spritecollide(self, trap_list, True)
+        treasure_hit = pygame.sprite.spritecollide(self, treasure_list, True)
+        found_list.add(treasure_hit)
+        
+        # Check the list of collisions.
+        for trap in traps_hit_list:
+            try:
+                last = found_list.sprites()[-1]
+                self.score -= last.value
+                found_list.remove(last)
+            except IndexError:
+                pass
+            traps_left -=1
+            
+        if traps_left==0:
+            traps_left = generate_traps(10)
+            
+        for treasure in treasure_hit:
+            self.score += treasure.value
+            try:
+                if treasure.value == wish_list[0]:
+                    wish_list.pop(0)
+            except IndexError:
+                pass  
         
 class Button():
     def __init__(self, x, y, width, height, text, color, active_color):
@@ -147,7 +178,10 @@ class Timer():
         
     def update(self):
         pygame.draw.rect(screen, (0,0,0),(self.x-2,self.y,60,40))
-        if self.total_seconds is not 0:
+        if self.total_seconds == 0:
+            global pause
+            pause=True
+        elif self.total_seconds is not 0:
             self.total_seconds = 60 - pygame.time.get_ticks()/1000# // 60
             if self.total_seconds < 0:
                 self.total_seconds = 0
@@ -161,6 +195,7 @@ class Timer():
 # -------- Main Program -----------
 def main():
     #set up variables
+    global traps_left
     traps_left=0
 
     #set up main screen size and color
@@ -250,6 +285,7 @@ def main():
         #update screen and screen items
         refreshScreen(treasure_map, text_add, text_score, text_wishlist, text_timer,text_speed)
         refreshButtons(robot, goldButton, silverButton, bronzeButton, goldwishlistButton, silverwishlistButton, bronzewishlistButton,clearwishlistButton, speedplusButton, speedminusButton, pauseButton, quitButton)
+
         displaySpeed(robot,button_font)
         displayScore(1100,60,system_font,robot)
         
@@ -257,40 +293,15 @@ def main():
         selectObjects(treasure_list)
 
         timer.update()
-
+        
         #pause function
         if pause is not True:
             #move robot
             robot.hunt()
-
-        #check collision
-        traps_hit_list = pygame.sprite.spritecollide(robot, trap_list, True)
-        treasure_hit = pygame.sprite.spritecollide(robot, treasure_list, True)
-        found_list.add(treasure_hit)
-
+        
         #update GUI lists
         FoundList.update(found_list)
         WishList.update(wish_list)
-        
-        # Check the list of collisions.
-        for trap in traps_hit_list:
-            try:
-                last = found_list.sprites()[-1]
-                robot.score -= last.value
-                found_list.remove(last)
-            except IndexError:
-                pass
-        if traps_left==0:
-            traps_left = generate_traps(10)
-            
-        for treasure in treasure_hit:
-            robot.score += treasure.value
-            try:
-                if treasure.value == wish_list[0]:
-                    wish_list.pop(0)
-            except IndexError:
-                pass
-            
 
         clock.tick(60)
         checkForQuit()
@@ -298,10 +309,12 @@ def main():
     return # End of main program
 
 
-#functions
+#functions  
+
 def displaySpeed(robot,font):
     text=font.render(str(robot.speed), True, (154,154,154))
     screen.blit(text,[1140,375])
+    
 def clear_wishlist():
     global wish_list
     wish_list= []
