@@ -130,6 +130,7 @@ class Button():
         else:
             pygame.draw.rect(screen, self.color,(self.x,self.y,self.width,self.height))
         screen.blit(self.text, [self.x+(self.width/6), self.y+(self.height/5)])
+            
 
 class TreasureList():
     
@@ -191,7 +192,67 @@ class Timer():
         timer=self.font.render(time, True, (255,255,255))
         screen.blit(timer, [self.x+7, self.y+2])
 
+
+class music_player():
+    
+    def __init__(self, x, y, width, height, color):
+        self.x=x
+        self.y=y
+        self.width=width
+        self.height=height
+        self.color=color
+        self.playlist=["Radioactive", "Fox", "Lucky"]
+        self.currentsong=0
+        self.button_font=pygame.font.SysFont('Calibri', 12, True, False)
+        self.display_font=pygame.font.SysFont('Calibri', 25)
+        pygame.mixer.music.load(self.playlist[self.currentsong]+".ogg")
+        self.playbutton=Button(self.x+5, self.y+self.height/2 ,40, 30, self.button_font.render("play", True, (204, 204, 204)), (123, 123, 123), (102, 102, 102))
+        self.stopbutton=Button(self.x+55, self.y+self.height/2 ,40, 30, self.button_font.render("stop", True, (204, 204, 204)), (123, 123, 123), (102, 102, 102))
+        self.pausebutton=Button(self.x+105, self.y+self.height/2 ,40, 30, self.button_font.render("pause", True, (204, 204, 204)), (123, 123, 123), (102, 102, 102))
+        self.prevbutton=Button(self.x+155, self.y+self.height/2 ,40, 30, self.button_font.render("prev", True, (204, 204, 204)), (123, 123, 123), (102, 102, 102))
+        self.nextbutton=Button(self.x+205, self.y+self.height/2 ,40, 30, self.button_font.render("next", True, (204, 204, 204)), (123, 123, 123), (102, 102, 102))
+
         
+    def update(self):
+        pygame.draw.rect(screen, self.color,(self.x,self.y,self.width,self.height))
+        songdisplay=self.display_font.render(self.playlist[self.currentsong], True, (123, 123, 123))
+        screen.blit(songdisplay, [self.x + self.width/2-5*len(self.playlist[self.currentsong]), self.y+self.height/5])
+        self.playbutton.update(self.play, None)
+        self.stopbutton.update(self.stop, None)
+        self.pausebutton.update(self.pause, None)
+        self.prevbutton.update(self.prevSong, None)
+        self.nextbutton.update(self.nextSong, None)
+        
+    def nextSong(self):
+        try:
+            pygame.mixer.music.load(self.playlist[self.currentsong+1]+".ogg")
+            self.currentsong+=1
+        except IndexError:
+            self.currentsong=0
+            pygame.mixer.music.load(self.playlist[self.currentsong]+".ogg")
+        self.play()
+        
+    def prevSong(self):
+        try:
+            pygame.mixer.music.load(self.playlist[self.currentsong-1]+".ogg")
+            self.currentsong-=1
+        except IndexError:
+            self.currentsong=len(self.playlist)-1
+            pygame.mixer.music.load(self.playlist[self.currentsong]+".ogg")
+        self.play()
+        
+    def pause(self):
+        pygame.mixer.music.pause()
+        
+    def stop(self):
+        pygame.mixer.music.stop()
+
+    def play(self):
+        if not pygame.mixer.music.get_busy():
+            pygame.mixer.music.play()
+        else:
+            pygame.mixer.music.unpause()
+            
 # -------- Main Program -----------
 def main():
     #set up variables
@@ -278,6 +339,8 @@ def main():
     FoundList=TreasureList( 0, 0, 1000, 20, small_font.render("found treasures", True, (100,100,100)), (60,60,60))
     WishList=TreasureList( 0, 700, 1000, 20, small_font.render("wishlist", True, (100,100,100)), (60,60,60))
 
+    musicPlayer=music_player(1015, 450, 250, 100, (172,172,172))
+        
     while running:
         #obtain mouse position
         mouse=pygame.mouse.get_pos()
@@ -288,6 +351,8 @@ def main():
 
         displaySpeed(robot,button_font)
         displayScore(1100,60,system_font,robot)
+        
+        musicPlayer.update()
         
         #select and move treasures
         selectObjects(treasure_list)
