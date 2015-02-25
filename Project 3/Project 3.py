@@ -211,10 +211,14 @@ class music_player():
         self.pausebutton=Button(self.x+105, self.y+self.height/2 ,40, 30, self.button_font.render("pause", True, (204, 204, 204)), (123, 123, 123), (102, 102, 102))
         self.prevbutton=Button(self.x+155, self.y+self.height/2 ,40, 30, self.button_font.render("prev", True, (204, 204, 204)), (123, 123, 123), (102, 102, 102))
         self.nextbutton=Button(self.x+205, self.y+self.height/2 ,40, 30, self.button_font.render("next", True, (204, 204, 204)), (123, 123, 123), (102, 102, 102))
-
-        
+        self.SONG_END = 2
+        pygame.mixer.music.set_endevent(self.SONG_END)
+        self.music_bar=0
     def update(self):
         pygame.draw.rect(screen, self.color,(self.x,self.y,self.width,self.height))
+        self.music_bar=pygame.mixer.music.get_pos()/self.width/10
+        if self.music_bar > 0:
+            pygame.draw.rect(screen, (123, 123, 123),(self.x,self.y,self.music_bar,5))
         songdisplay=self.display_font.render(self.playlist[self.currentsong], True, (123, 123, 123))
         screen.blit(songdisplay, [self.x + self.width/2-5*len(self.playlist[self.currentsong]), self.y+self.height/5])
         self.playbutton.update(self.play, None)
@@ -222,6 +226,10 @@ class music_player():
         self.pausebutton.update(self.pause, None)
         self.prevbutton.update(self.prevSong, None)
         self.nextbutton.update(self.nextSong, None)
+        print pygame.mixer.music.get_pos()/self.width/10
+        for event in pygame.event.get():
+            if event.type == self.SONG_END:
+                self.nextSong()
         
     def nextSong(self):
         try:
