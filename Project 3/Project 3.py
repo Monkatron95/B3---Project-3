@@ -114,17 +114,22 @@ class Robot(Block):
                 pass  
         
 class Button():
-    def __init__(self, x, y, width, height, text, color, active_color):
+    def __init__(self, x, y, width, height, text, text_color, text_size, color, active_color):
         self.x=x
         self.y=y
         self.width=width
         self.height=height
         self.text = text
+        self.text_color=text_color
+        self.text_size=text_size
         self.color=color
         self.active_color=active_color
+        self.font=pygame.font.SysFont('Calibri', self.text_size, True, False)
+        self.text_full= self.font.render(self.text, True, self.text_color)
         self.clicksound=pygame.mixer.Sound("resources/sounds/button.ogg")
     #def 
     def update(self, action, condition):
+        mouse=pygame.mouse.get_pos()
         if self.x+self.width > mouse[0] > self.x and self.y+self.height > mouse[1] > self.y:
             pygame.draw.rect(screen, self.active_color,(self.x,self.y,self.width,self.height))
             if mouseClick():
@@ -135,7 +140,7 @@ class Button():
                     action()
         else:
             pygame.draw.rect(screen, self.color,(self.x,self.y,self.width,self.height))
-        screen.blit(self.text, [self.x+(self.width/6), self.y+(self.height/5)])
+        screen.blit(self.text_full, [self.x+(self.width/2-self.text_size*(len(self.text)/4.8)), self.y+(self.height/5)])
             
 
 class TreasureList():
@@ -182,6 +187,9 @@ class Timer():
         self.total_seconds=-1
         self.seconds=0
         self.minutes=0
+        self.start_time=0
+        self.pause_time=0
+        self.accumulated_time=0
         
     def update(self):
         pygame.draw.rect(screen, (0,0,0),(self.x-2,self.y,60,40))
@@ -189,7 +197,7 @@ class Timer():
             global pause
             pause=True
         elif self.total_seconds is not 0:
-            self.total_seconds = 60 - pygame.time.get_ticks()/1000# // 60
+            self.total_seconds = 60 - (pygame.time.get_ticks()-self.start_time-self.accumulated_time)/1000# // 60
             if self.total_seconds < 0:
                 self.total_seconds = 0
             self.minutes = self.total_seconds // 60
@@ -207,30 +215,22 @@ class music_player():
         self.width=width
         self.height=height
         self.color=color
-        self.playlist=["Turn", "Radioactive", "Fox", "Lucky"]
+        self.playlist=["Radioactive", "Fox", "Lucky"]
         self.currentsong=0
-        self.nextsong=self.currentsong+1
-        self.button_font=pygame.font.SysFont('Calibri', 12, True, False)
         self.display_font=pygame.font.SysFont('Calibri', 25)
         self.path="resources/music/"
         pygame.mixer.music.load(self.path+self.playlist[self.currentsong]+".ogg")
         #create buttons
-        self.playbutton=Button(self.x+5, self.y+self.height/2 ,40, 30, self.button_font.render("play", True, (204, 204, 204)), (123, 123, 123), (102, 102, 102))
-        self.stopbutton=Button(self.x+55, self.y+self.height/2 ,40, 30, self.button_font.render("stop", True, (204, 204, 204)), (123, 123, 123), (102, 102, 102))
-        self.pausebutton=Button(self.x+105, self.y+self.height/2 ,40, 30, self.button_font.render("pause", True, (204, 204, 204)), (123, 123, 123), (102, 102, 102))
-        self.prevbutton=Button(self.x+155, self.y+self.height/2 ,40, 30, self.button_font.render("prev", True, (204, 204, 204)), (123, 123, 123), (102, 102, 102))
-        self.nextbutton=Button(self.x+205, self.y+self.height/2 ,40, 30, self.button_font.render("next", True, (204, 204, 204)), (123, 123, 123), (102, 102, 102))
+        self.playbutton=Button(self.x+5, self.y+self.height/2 ,40, 30, "play", (204, 204, 204), 12, (123, 123, 123), (102, 102, 102))
+        self.stopbutton=Button(self.x+55, self.y+self.height/2 ,40, 30,"stop", (204, 204, 204), 12, (123, 123, 123), (102, 102, 102))
+        self.pausebutton=Button(self.x+105, self.y+self.height/2 ,40, 30,"pause", (204, 204, 204), 12, (123, 123, 123), (102, 102, 102))
+        self.prevbutton=Button(self.x+155, self.y+self.height/2 ,40, 30, "prev", (204, 204, 204), 12, (123, 123, 123), (102, 102, 102))
+        self.nextbutton=Button(self.x+205, self.y+self.height/2 ,40, 30, "next",(204, 204, 204), 12, (123, 123, 123), (102, 102, 102))
         pygame.mixer.music.set_volume(0.5)
         self.volume_bar=volumeBar(self.x, self.y+self.height-5, self.width, 5, (123, 123, 123), 0.5)
         self.SONG_END = pygame.USEREVENT + 1
         pygame.mixer.music.set_endevent(self.SONG_END)
     def update(self):
-        #if self.currentsong<len(self.playlist)-1:
-        #    self.nextsong=self.currentsong+1
-        #else:
-        #    self.nextsong=0
-        #pygame.mixer.music.queue(self.path+self.playlist[self.nextsong]+".ogg")
-        
         pygame.draw.rect(screen, self.color,(self.x,self.y,self.width,self.height))
         self.volume_bar.update()
         songdisplay=self.display_font.render(self.playlist[self.currentsong], True, (123, 123, 123))
@@ -309,15 +309,12 @@ class scoreboard():
             
 # -------- Main Program -----------
 def main():
+    #clear screen
+    screen.fill((200,200,200))
     #set up variables
     global traps_left
     traps_left=0
 
-    #set up main screen size and color
-    global screen, mouse
-    screen=pygame.display.set_mode((1280,720))
-    
-    
     #declare images
     treasure_map = pygame.image.load("resources/images/map.png")
 
@@ -329,11 +326,8 @@ def main():
     
     
     #declare other stuff
-    global Target, MouseDown, MousePressed, MouseReleased, running, pause
+    global Target, running, pause
     Target=None # target of Drag/Drop
-    MouseDown = False
-    MousePressed = False
-    MouseReleased = False
     running=True
     pause = False
 
@@ -343,9 +337,8 @@ def main():
     small_font = pygame.font.SysFont('Calibri', 15, True, False)
 
     #declare time variables
-    clock = pygame.time.Clock()
     timer =  Timer( 1170, 280, 300, 100, (0,0,0))
-
+    timer.start_time=pygame.time.get_ticks()
     #declare lists
     global all_sprites_list, trap_list, treasure_list, found_list, wish_list
     all_sprites_list = pygame.sprite.Group() # all sprites
@@ -366,22 +359,26 @@ def main():
     text_wishlist=font.render("Request:", True, (154,154,154))
     text_timer=font.render("Time left:", True, (154,154,154))
     text_speed=font.render("Adjust speed:", True, (154,154,154))
+
+    writeText(text_add, text_score, text_wishlist, text_timer, text_speed)
     
     #declare buttons
-    goldButton= Button(1010, 130, 80, 30, button_font.render(" Gold", True, (184,134,11)) , (255,215,0), (255,235,0))
-    silverButton= Button(1100, 130, 80, 30, button_font.render(" Silver", True, (105,105,105)), (160,160,160), (172,172,172))
-    bronzeButton= Button(1190, 130, 80, 30, button_font.render("Bronze", True, (184,134,11)), (218,165,32), (238,195,52))
+    goldButton= Button(1010, 130, 80, 30, "Gold",(184,134,11), 20 , (255,215,0), (255,235,0))
+    silverButton= Button(1100, 130, 80, 30, "Silver", (105,105,105), 20 , (160,160,160), (172,172,172))
+    bronzeButton= Button(1190, 130, 80, 30, "Bronze",(184,134,11), 20 , (218,165,32), (238,195,52))
 
-    goldwishlistButton= Button(1120, 190, 30, 30, button_font.render(" +", True, (184,134,11)) , (255,215,0), (255,235,0))
-    silverwishlistButton= Button(1170, 190, 30, 30, button_font.render(" +", True, (105,105,105)) , (160,160,160), (172,172,172))
-    bronzewishlistButton= Button(1220, 190, 30, 30, button_font.render(" +", True, (184,134,11)) , (218,165,32), (238,195,52))
-    clearwishlistButton= Button(1110, 230, 150, 30, button_font.render("clear wishlist", True, (137,74,74)) , (161,161,161), (171,171,171))
+    goldwishlistButton= Button(1120, 190, 30, 30, "+", (184,134,11), 20  , (255,215,0), (255,235,0))
+    silverwishlistButton= Button(1170, 190, 30, 30, "+", (105,105,105), 20  , (160,160,160), (172,172,172))
+    bronzewishlistButton= Button(1220, 190, 30, 30, "+", (184,134,11), 20  , (218,165,32), (238,195,52))
+    clearwishlistButton= Button(1110, 230, 150, 30, "clear wishlist",(137,74,74), 20  , (161,161,161), (171,171,171))
 
-    speedplusButton= Button(1180, 370, 30, 30, button_font.render(" +", True, (204, 204, 204)), (123, 123, 123), (102, 102, 102))
-    speedminusButton= Button(1080, 370, 30, 30, button_font.render(" -", True, (204, 204, 204)), (123, 123, 123), (102, 102, 102))
+    speedplusButton= Button(1180, 370, 30, 30, "+", (204, 204, 204), 20 , (123, 123, 123), (102, 102, 102))
+    speedminusButton= Button(1080, 370, 30, 30,  "-", (204, 204, 204), 20 , (123, 123, 123), (102, 102, 102))
     
-    pauseButton= Button(1020, 660, 80, 30, button_font.render("Pause", True, (204, 204, 204)), (123, 123, 123), (102, 102, 102))    
-    quitButton= Button(1180, 660, 80, 30, button_font.render("  Quit", True, (204, 0, 0)), (153, 0, 0), (102, 0, 0))
+    pauseButton= Button(1020, 660, 80, 30, "Pause", (204, 204, 204), 20 , (123, 123, 123), (102, 102, 102))
+    menuButton= Button(1020, 570, 240, 30, "Main Menu  ", (204, 204, 204), 20 , (123, 123, 123), (102, 102, 102))
+    resetButton= Button(1020, 610, 240, 30, "Reset", (204, 204, 204), 20 , (123, 123, 123), (102, 102, 102)) 
+    quitButton= Button(1180, 660, 80, 30, "Quit", (204, 0, 0), 20 , (153, 0, 0), (102, 0, 0))
 
     FoundList=TreasureList( 0, 0, 1000, 20, small_font.render("found treasures", True, (100,100,100)), (60,60,60))
     WishList=TreasureList( 0, 700, 1000, 20, small_font.render("wishlist", True, (100,100,100)), (60,60,60))
@@ -389,12 +386,10 @@ def main():
     musicPlayer=music_player(1015, 450, 250, 100, (172,172,172))
     score=scoreboard(1100,60, 100, 24)    
     while running:
-        #obtain mouse position
-        mouse=pygame.mouse.get_pos()
-        
+
         #update screen and screen items
-        refreshScreen(treasure_map, text_add, text_score, text_wishlist, text_timer,text_speed)
-        refreshButtons(robot, goldButton, silverButton, bronzeButton, goldwishlistButton, silverwishlistButton, bronzewishlistButton,clearwishlistButton, speedplusButton, speedminusButton, pauseButton, quitButton)
+        refreshScreen(treasure_map)#, text_add, text_score, text_wishlist, text_timer,text_speed)
+        refreshButtons(robot, timer, goldButton, silverButton, bronzeButton, goldwishlistButton, silverwishlistButton, bronzewishlistButton,clearwishlistButton, speedplusButton, speedminusButton, pauseButton, menuButton,resetButton, quitButton)
 
         displaySpeed(robot,button_font)
         #update music player
@@ -408,11 +403,12 @@ def main():
         #select and move treasures
         selectObjects(treasure_list)
                
-        #update timer
-        timer.update()
+
         
         #pause function
         if pause is not True:
+            #update timer
+            timer.update()
             #move robot
             robot.hunt()
         
@@ -421,12 +417,60 @@ def main():
         WishList.update(wish_list)
 
         clock.tick(60)
-        #checkForQuit()
         pygame.display.flip()
     return # End of main program
 
+def main_menu(): # main menu
+    global screen, clock
+    screen=pygame.display.set_mode((1280,720))
+    pygame.display.set_caption("Treasure Hunter")
+    clock = pygame.time.Clock()
 
-#functions  
+    #text
+    font = pygame.font.SysFont('Calibri', 100)
+    text_title=font.render("Treasure Hunter 3.0", True, (154,154,154))
+    #buttons
+    startButton= Button(540, 340, 200, 60, "Start",(204, 204, 204),38, (123, 123, 123), (34,139,34))
+    instructionsButton= Button(540, 420, 200, 60, "Instructions",(204, 204, 204),38, (123, 123, 123), (128,0,128))
+    quitButton= Button(540, 500, 200, 60, "Quit",(204, 204, 204),38, (123, 123, 123), (128,0,0))
+    not_done=True
+    
+    global MouseDown, MousePressed, MouseReleased
+    MouseDown = False
+    MousePressed = False
+    MouseReleased = False
+
+    #main()
+    while not_done:
+        screen.fill((200,200,200))
+
+        #update text
+        screen.blit(text_title,[250,140])
+
+        #update buttons
+        startButton.update(main, None)
+        instructionsButton.update(instructions, None)
+        quitButton.update(terminate, None)
+        
+        checkForEvents(None)
+        clock.tick(60)
+        pygame.display.flip()
+    return
+
+def instructions():
+    global reading
+    reading= True
+    startButton= Button(80, 650, 100, 30, "Start",(204, 204, 204),20, (123, 123, 123), (34,139,34))
+    quitButton= Button(1100, 650, 100, 30, "Quit",(204, 204, 204),20, (123, 123, 123), (128,0,0))
+    while reading:
+        screen.fill((200,200,200))
+        startButton.update(main, None)
+        quitButton.update(terminate, None)
+        checkForEvents(None)
+        clock.tick(60)
+        pygame.display.flip()
+    return
+#functions
 
 def checkForEvents(musicPlayer):
      global MouseDown,MousePressed, MouseReleased
@@ -444,21 +488,27 @@ def checkForEvents(musicPlayer):
             MousePressed=False
             MouseReleased=True
             MouseDown=False
-        if Event.type == musicPlayer.SONG_END:
-            musicPlayer.nextSong()
+        if musicPlayer is not None:
+            if Event.type == musicPlayer.SONG_END:
+                musicPlayer.nextSong()
      return MouseDown,MousePressed, MouseReleased
             
 def displaySpeed(robot,font):
-    text=font.render(str(robot.speed), True, (154,154,154))
+    pygame.draw.rect(screen, (180,180,180),(1110,370,70,30))
+    text=font.render(str(robot.speed), True, (134,134,134))
     screen.blit(text,[1140,375])
     
 def clear_wishlist():
     global wish_list
     wish_list= []
     
-def pause_movement():
+def pause_movement(timer):
     global pause
-    pause= not pause
+    if pause:
+        timer.accumulated_time+= pygame.time.get_ticks() - timer.pause_time
+    else:
+        timer.pause_time = pygame.time.get_ticks()
+    pause = not pause
     
 def displayScore(x,y,digital_font,robot):
         #update and display score
@@ -500,25 +550,25 @@ def addToWishlist(item):
     wish_list.append(item)
         
 def terminate():
-    running = False
     pygame.quit()
     sys.exit()
-
-
-def refreshScreen(background, text_add, text_score, text_wishlist, text_timer, text_speed):
-        #clear screen
-        screen.fill((200,200,200))
+    
+def refreshScreen(background):
         # clear drawing screen
         screen.blit(background, (0,0))
+        # draw objects
+        all_sprites_list.draw(screen)
+        
+def writeText(text_add, text_score, text_wishlist, text_timer, text_speed):
+        #refresh text
         screen.blit(text_add, [1070,100])
         screen.blit(text_score, [1110,20])
         screen.blit(text_wishlist, [1010,190])
         screen.blit(text_timer, [1040,290])
         screen.blit(text_speed,[1080,340])
-        # draw objects
-        all_sprites_list.draw(screen)
+
         
-def refreshButtons(robot, goldButton, silverButton, bronzeButton, goldwishlistButton, silverwishlistButton, bronzewishlistButton, clearwishlistButton, speedplusButton, speedminusButton, pauseButton, quitButton):
+def refreshButtons(robot, timer, goldButton, silverButton, bronzeButton, goldwishlistButton, silverwishlistButton, bronzewishlistButton, clearwishlistButton, speedplusButton, speedminusButton, pauseButton, menuButton,resetButton, quitButton):
         #update buttons
         goldButton.update(generate_treasure, gold)
         silverButton.update(generate_treasure, silver)
@@ -529,21 +579,15 @@ def refreshButtons(robot, goldButton, silverButton, bronzeButton, goldwishlistBu
         clearwishlistButton.update(clear_wishlist, None)
         speedplusButton.update(robot.adjustSpeed, 1)
         speedminusButton.update(robot.adjustSpeed, -1)
-        pauseButton.update(pause_movement, None)
+        pauseButton.update(pause_movement, timer)
+        menuButton.update(main_menu, None)
+        resetButton.update(main, None)
         quitButton.update(terminate, None)
             
 def selectObjects(object_list):
             global Target, MouseDown, MousePressed, MouseReleased, running
-            #for Event in pygame.event.get():
-            #    if Event.type == pygame.MOUSEBUTTONDOWN:
-            #        MousePressed=True 
-            #        MouseDown=True 
-            #        MouseReleased=False
-            #    if Event.type == pygame.MOUSEBUTTONUP:
-            #        MousePressed=False
-            #        MouseReleased=True
-            #        MouseDown=False
-
+            #obtain mouse position
+            mouse=pygame.mouse.get_pos()
             if MousePressed==True:
                 if Target is None:
                     for treasure in object_list: # search all items
@@ -555,15 +599,7 @@ def selectObjects(object_list):
                     Target.rect.y=mouse[1]-50
             if MouseReleased:
                 Target=None # drop item
-            return Target, MouseDown,MousePressed, MouseReleased
 
-def checkForQuit():
-     for Event in pygame.event.get():
-        if Event.type == QUIT:
-            terminate()
-        if Event.type == KEYDOWN:
-            if Event.key == K_ESCAPE:
-                terminate()
 
 if __name__ == '__main__':
-    main() # Execute main function
+    main_menu()
