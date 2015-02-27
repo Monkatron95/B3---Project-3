@@ -1,5 +1,5 @@
 #import libraries
-import pygame, os, sys, random, time
+import pygame, os, sys, random, time, copy
 from pygame.locals import *
 
 # Initialize the game engine
@@ -44,8 +44,9 @@ class Robot(Block):
         self.speed=random.randrange(1,10)
         super(Robot, self).__init__(filename)
         self.treasuresound= pygame.mixer.Sound("resources/sounds/treasure.ogg")
+        self.treasuresound.set_volume(0.3)
         self.trapsound= pygame.mixer.Sound("resources/sounds/trap.ogg")
-        
+        self.trapsound.set_volume(0.5)
     def hunt(self):
         self.checkForCollision()
         try:
@@ -125,10 +126,11 @@ class Button():
         self.color=color
         self.active_color=active_color
         self.font=pygame.font.SysFont('Calibri', self.text_size, True, False)
-        self.text_full= self.font.render(self.text, True, self.text_color)
         self.clicksound=pygame.mixer.Sound("resources/sounds/button.ogg")
+        self.clicksound.set_volume(0.5)
     #def 
     def update(self, action, condition):
+        self.text_full= self.font.render(self.text, True, self.text_color)
         mouse=pygame.mouse.get_pos()
         if self.x+self.width > mouse[0] > self.x and self.y+self.height > mouse[1] > self.y:
             pygame.draw.rect(screen, self.active_color,(self.x,self.y,self.width,self.height))
@@ -194,8 +196,13 @@ class Timer():
     def update(self):
         pygame.draw.rect(screen, (0,0,0),(self.x-2,self.y,60,40))
         if self.total_seconds == 0:
-            global pause
+            global pause , running
             pause=True
+            running=False
+            s = pygame.Surface((1280, 720), pygame.SRCALPHA)
+            s.fill((200,200,200,128))                        
+            screen.blit(s, (0,0))
+            pygame.mixer.music.pause()
         elif self.total_seconds is not 0:
             self.total_seconds = 60 - (pygame.time.get_ticks()-self.start_time-self.accumulated_time)/1000# // 60
             if self.total_seconds < 0:
@@ -337,6 +344,7 @@ def main():
     small_font = pygame.font.SysFont('Calibri', 15, True, False)
 
     #declare time variables
+    global timer
     timer =  Timer( 1170, 280, 300, 100, (0,0,0))
     timer.start_time=pygame.time.get_ticks()
     #declare lists
@@ -418,6 +426,7 @@ def main():
 
         clock.tick(60)
         pygame.display.flip()
+    select_order()
     return # End of main program
 
 def main_menu(): # main menu
@@ -433,7 +442,6 @@ def main_menu(): # main menu
     startButton= Button(540, 340, 200, 60, "Start",(204, 204, 204),38, (123, 123, 123), (34,139,34))
     instructionsButton= Button(540, 420, 200, 60, "Instructions",(204, 204, 204),38, (123, 123, 123), (128,0,128))
     quitButton= Button(540, 500, 200, 60, "Quit",(204, 204, 204),38, (123, 123, 123), (128,0,0))
-    not_done=True
     
     global MouseDown, MousePressed, MouseReleased
     MouseDown = False
@@ -441,7 +449,7 @@ def main_menu(): # main menu
     MouseReleased = False
 
     #main()
-    while not_done:
+    while True:
         screen.fill((200,200,200))
 
         #update text
@@ -459,10 +467,9 @@ def main_menu(): # main menu
 
 def instructions():
     global reading
-    reading= True
     startButton= Button(80, 650, 100, 30, "Start",(204, 204, 204),20, (123, 123, 123), (34,139,34))
     quitButton= Button(1100, 650, 100, 30, "Quit",(204, 204, 204),20, (123, 123, 123), (128,0,0))
-    while reading:
+    while True:
         screen.fill((200,200,200))
         startButton.update(main, None)
         quitButton.update(terminate, None)
@@ -470,6 +477,62 @@ def instructions():
         clock.tick(60)
         pygame.display.flip()
     return
+
+def select_order():
+    selecting=True
+    font = pygame.font.SysFont('Calibri', 60)
+    text_title=font.render("Select a sorting order:", True, (154,154,154))
+    quitButton= Button(1150, 525, 100, 30, "Quit",(204, 0, 0), 20 , (153, 0, 0), (102, 0, 0))
+    ascendingButton= Button(250, 350, 200, 50, "Ascending ",(204, 204, 204),30, (123, 123, 123), (138,43,226))
+    descendingButton= Button(830, 350, 200, 50, "Descending ",(204, 204, 204),30, (123, 123, 123), (75,0,130))
+    while True:
+        pygame.draw.rect(screen, (200,200,200),(0,150,1280,420))
+        #update text
+        screen.blit(text_title,[370,200])
+        quitButton.update(terminate, None)
+        ascendingButton.update(select_sorting, "a")
+        descendingButton.update(select_sorting, "d")
+        checkForEvents(None)
+        clock.tick(60)
+        pygame.display.flip()
+
+
+def select_sorting(option):
+    global selecting , order
+    order=option
+    font = pygame.font.SysFont('Calibri', 60)
+    text_title=font.render("Select a sorting algorithm:", True, (154,154,154))
+    quitButton= Button(1150, 525, 100, 30, "Quit",(204, 0, 0), 20 , (153, 0, 0), (102, 0, 0))
+    bubble_sortButton= Button(80, 325, 200, 50, "Bubble Sort",(204, 204, 204),30, (123, 123, 123), (138,43,226))
+    quick_sortButton= Button(320, 325, 200, 50, "Quick Sort",(204, 204, 204),30, (123, 123, 123), (75,0,130))
+    while True:
+        pygame.draw.rect(screen, (200,200,200),(0,150,1280,420))
+        #update text
+        screen.blit(text_title,[300,200])
+        quitButton.update(terminate, None)
+        bubble_sortButton.update(sort, bubble_sortButton.text)
+        quick_sortButton.update(sort, quick_sortButton.text)
+        checkForEvents(None)
+        clock.tick(60)
+        pygame.display.flip()
+
+def sort(sort_type):
+    global sorting, sort_list
+    sorting=True
+    sort_list = copy.deepcopy(found_list)
+    font = pygame.font.SysFont('Calibri', 60)
+    text_title=font.render(sort_type, True, (154,154,154))
+    quitButton= Button(1150, 525, 100, 30, "Quit",(204, 0, 0), 20 , (153, 0, 0), (102, 0, 0))
+    backButton= Button(130, 525, 100, 30, "Back",(204, 204, 204),20, (123, 123, 123), (70,130,180))
+    while sorting:
+        pygame.draw.rect(screen, (200,200,200),(0,150,1280,420))
+        #update text
+        screen.blit(text_title,[1280/2-60*(len(sort_type)/4.8),200])
+        quitButton.update(terminate, None)
+        backButton.update(select_order, None)
+        checkForEvents(None)
+        clock.tick(60)
+        pygame.display.flip()    
 #functions
 
 def checkForEvents(musicPlayer):
@@ -502,11 +565,13 @@ def clear_wishlist():
     global wish_list
     wish_list= []
     
-def pause_movement(timer):
+def pause_movement(pauseButton):
     global pause
     if pause:
+        pauseButton.text="Pause"
         timer.accumulated_time+= pygame.time.get_ticks() - timer.pause_time
     else:
+        pauseButton.text="Resume  "
         timer.pause_time = pygame.time.get_ticks()
     pause = not pause
     
@@ -579,7 +644,7 @@ def refreshButtons(robot, timer, goldButton, silverButton, bronzeButton, goldwis
         clearwishlistButton.update(clear_wishlist, None)
         speedplusButton.update(robot.adjustSpeed, 1)
         speedminusButton.update(robot.adjustSpeed, -1)
-        pauseButton.update(pause_movement, timer)
+        pauseButton.update(pause_movement, pauseButton)
         menuButton.update(main_menu, None)
         resetButton.update(main, None)
         quitButton.update(terminate, None)
