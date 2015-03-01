@@ -177,6 +177,34 @@ class TreasureList():
         except IndexError:
                  pass
 
+class SortingList():
+    def __init__(self, x, y, width, height):
+        self.x=x
+        self.y=y
+        self.width=width
+        self.height=height
+        self.gold=pygame.image.load("resources/images/treasure_gold_small.gif")
+        self.silver=pygame.image.load("resources/images/treasure_silver_small.gif")
+        self.bronze=pygame.image.load("resources/images/treasure_bronze_small.gif")
+    def update(self, items):
+        position=self.x+60        
+        try:
+                 for item in items:
+                     if position <1000:
+                         try:
+                             temp = item.value
+                         except AttributeError:
+                             temp=item
+                         if temp == 300:
+                             screen.blit(self.gold ,(position,self.y))
+                         elif temp == 200:
+                             screen.blit(self.silver ,(position,self.y))
+                         elif temp==100:
+                             screen.blit(self.bronze ,(position,self.y))
+                         position=position+65
+        except IndexError:
+                 pass
+
 class Timer():
     def __init__(self, x, y, width, height, color):
         self.x=x
@@ -204,7 +232,7 @@ class Timer():
             screen.blit(s, (0,0))
             pygame.mixer.music.pause()
         elif self.total_seconds is not 0:
-            self.total_seconds = 60 - (pygame.time.get_ticks()-self.start_time-self.accumulated_time)/1000# // 60
+            self.total_seconds = 60 - (pygame.time.get_ticks()-self.start_time-self.accumulated_time)/1000
             if self.total_seconds < 0:
                 self.total_seconds = 0
             self.minutes = self.total_seconds // 60
@@ -410,7 +438,6 @@ def main():
         
         #select and move treasures
         selectObjects(treasure_list)
-               
 
         
         #pause function
@@ -428,6 +455,8 @@ def main():
         pygame.display.flip()
     select_order()
     return # End of main program
+
+#other stages
 
 def main_menu(): # main menu
     global screen, clock
@@ -448,7 +477,6 @@ def main_menu(): # main menu
     MousePressed = False
     MouseReleased = False
 
-    #main()
     while True:
         screen.fill((200,200,200))
 
@@ -485,6 +513,9 @@ def select_order():
     quitButton= Button(1150, 525, 100, 30, "Quit",(204, 0, 0), 20 , (153, 0, 0), (102, 0, 0))
     ascendingButton= Button(250, 350, 200, 50, "Ascending ",(204, 204, 204),30, (123, 123, 123), (138,43,226))
     descendingButton= Button(830, 350, 200, 50, "Descending ",(204, 204, 204),30, (123, 123, 123), (75,0,130))
+    global sorting_list
+    sorting_list=[ ]
+    simplifyList(found_list, sorting_list)
     while True:
         pygame.draw.rect(screen, (200,200,200),(0,150,1280,420))
         #update text
@@ -510,30 +541,142 @@ def select_sorting(option):
         #update text
         screen.blit(text_title,[300,200])
         quitButton.update(terminate, None)
-        bubble_sortButton.update(sort, bubble_sortButton.text)
-        quick_sortButton.update(sort, quick_sortButton.text)
+        bubble_sortButton.update(sort, (bubble_sortButton.text, "bubble"))
+        quick_sortButton.update(sort, (quick_sortButton.text, "quick"))
         checkForEvents(None)
         clock.tick(60)
         pygame.display.flip()
 
 def sort(sort_type):
-    global sorting, sort_list
-    sorting=True
-    sort_list = copy.deepcopy(found_list)
-    font = pygame.font.SysFont('Calibri', 60)
-    text_title=font.render(sort_type, True, (154,154,154))
-    quitButton= Button(1150, 525, 100, 30, "Quit",(204, 0, 0), 20 , (153, 0, 0), (102, 0, 0))
-    backButton= Button(130, 525, 100, 30, "Back",(204, 204, 204),20, (123, 123, 123), (70,130,180))
-    while sorting:
-        pygame.draw.rect(screen, (200,200,200),(0,150,1280,420))
-        #update text
-        screen.blit(text_title,[1280/2-60*(len(sort_type)/4.8),200])
-        quitButton.update(terminate, None)
-        backButton.update(select_order, None)
+    global isSorted
+    isSorted=False
+    sortingScreen=sorting_screen(sort_type[0])
+    while True:
+        if isSorted is not True:
+            print "sorting"
+            if sort_type[1] is "bubble":
+                sortingScreen.bubble_sort()
+            elif sort_type[1] is "quick":
+                sortingScreen.quick_sort(sorting_list,0,len(sorting_list)-1 )
+        else:
+            sortingScreen.update()
         checkForEvents(None)
         clock.tick(60)
-        pygame.display.flip()    
+        pygame.display.flip()
+        
+class sorting_screen():
+    def __init__(self, title):
+        self.title=title
+        self.quitButton= Button(1150, 525, 100, 30, "Quit",(204, 0, 0), 20 , (153, 0, 0), (102, 0, 0))
+        self.backButton= Button(30, 525, 100, 30, "Back",(204, 204, 204),20, (123, 123, 123), (70,130,180))
+        self.display_sort = SortingList( 0, 350, 1280, 60)
+        self.font = pygame.font.SysFont('Calibri', 60)
+        self.text_title=self.font.render(self.title, True, (154,154,154))
+        #for quick sort
+        self.quick_sort_start=0
+        self.quick_sort_end=len(sorting_list)-1
+        self.status_message_font=pygame.font.SysFont('Calibri', 20)
+        self.status_message=self.status_message_font.render("sorting in progress", True, (128,0,0))
+
+    def update_status(self):
+        self.status_message=self.status_message_font.render("sorting complete", True, (0,128,0))
+        
+    def update(self):
+        pygame.draw.rect(screen, (200,200,200),(0,150,1280,420))
+        #update text
+        screen.blit(self.text_title,[1280/2-60*(len(self.title)/4.8),200])
+        screen.blit(self.status_message,[1280/2-60,530])
+        self.display_sort.update(sorting_list)
+        self.quitButton.update(terminate, None)
+        self.backButton.update(select_order, None)
+        clock.tick(60)
+        pygame.display.flip()
+        
+    def bubble_sort(self):
+        for passnum in range(len(sorting_list)-1,0,-1):
+            for i in range(passnum):
+                if sorting_list[i]>sorting_list[i+1]:
+                    temp = sorting_list[i]
+                    sorting_list[i] = sorting_list[i+1]
+                    sorting_list[i+1] = temp
+                    self.update()
+                    time.sleep(1)
+        global isSorted
+        isSorted = True
+        self.update_status()
+                    
+    def quick_sort_partition(self, list, start, end):
+        pivot = list[end]                          
+        bottom = start-1                           
+        top = end                                  
+        done = 0
+        while not done:                            
+
+            while not done:                       
+                bottom = bottom+1                  
+
+                if bottom == top:                  
+                    done = 1                       
+                    break
+
+                if list[bottom] > pivot:           
+                    list[top] = list[bottom]       
+                    break                          
+
+            while not done:                   
+                top = top-1           
+                
+                if top == bottom:               
+                    done = 1                      
+                    break
+
+                if list[top] < pivot:        
+                    list[bottom] = list[top]    
+                    break                      
+
+        list[top] = pivot
+        self.update()
+        time.sleep(1)
+        return top                               
+
+
+    def quick_sort(self,list, start, end):
+
+            if start < end:                            
+                split = self.quick_sort_partition(list, start, end)   
+                self.quick_sort(list, start, split-1)       
+                self.quick_sort(list, split+1, end)
+            else:
+                global isSorted
+                isSorted = True
+                self.update_status()
+                return
+                    
+def refreshSortBG(text_title, quitButton, backButton, sort_type):
+        pygame.draw.rect(screen, (200,200,200),(0,150,1280,420))
+        #update text
+        screen.blit(text_title,[1280/2-60*(len(sort_type[0])/4.8),200])
+        quitButton.update(terminate, None)
+        backButton.update(select_order, None)    
+        
 #functions
+        
+def bubbleSort(alist, display_sort, text_title, quitButton, backButton, sort_type):
+    for passnum in range(len(alist)-1,0,-1):
+        for i in range(passnum):
+            if alist[i]>alist[i+1]:
+                temp = alist[i]
+                alist[i] = alist[i+1]
+                alist[i+1] = temp
+                time.sleep(0.5)
+                refreshSortBG(text_title, quitButton, backButton, sort_type)
+                display_sort.update(alist)
+                pygame.display.flip()
+                print(alist)
+
+def simplifyList(a, b):
+    for x in a:
+        b.append(x.value)
 
 def checkForEvents(musicPlayer):
      global MouseDown,MousePressed, MouseReleased
@@ -631,8 +774,7 @@ def writeText(text_add, text_score, text_wishlist, text_timer, text_speed):
         screen.blit(text_wishlist, [1010,190])
         screen.blit(text_timer, [1040,290])
         screen.blit(text_speed,[1080,340])
-
-        
+      
 def refreshButtons(robot, timer, goldButton, silverButton, bronzeButton, goldwishlistButton, silverwishlistButton, bronzewishlistButton, clearwishlistButton, speedplusButton, speedminusButton, pauseButton, menuButton,resetButton, quitButton):
         #update buttons
         goldButton.update(generate_treasure, gold)
