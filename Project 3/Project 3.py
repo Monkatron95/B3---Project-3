@@ -442,13 +442,15 @@ def main():
     FoundList=TreasureList( 0, 0, 1000, 20, small_font.render("found treasures", True, (100,100,100)), (60,60,60))
     WishList=TreasureList( 0, 700, 1000, 20, small_font.render("wishlist", True, (100,100,100)), (60,60,60))
 
+    launchButton= Button(1020, 410, 240, 30, "Launch", (204, 204, 204), 20 , (123, 123, 123), (102, 102, 102))
+
     musicPlayer=music_player(1015, 450, 250, 100, (172,172,172))
     score=scoreboard(1100,60, 100, 24)    
     while True:
 
         #update screen and screen items
         refreshScreen(treasure_map)#, text_add, text_score, text_wishlist, text_timer,text_speed)
-        refreshButtons(robot, timer, goldButton, silverButton, bronzeButton, goldwishlistButton, silverwishlistButton, bronzewishlistButton,clearwishlistButton, speedplusButton, speedminusButton, pauseButton, menuButton,resetButton, quitButton)
+        refreshButtons(robot, timer, goldButton, silverButton, bronzeButton, goldwishlistButton, silverwishlistButton, bronzewishlistButton,clearwishlistButton, speedplusButton, speedminusButton, launchButton, pauseButton, menuButton,resetButton, quitButton)
 
         displaySpeed(robot,button_font)
         #update music player
@@ -846,7 +848,7 @@ def writeText(text_add, text_score, text_wishlist, text_timer, text_speed):
         screen.blit(text_timer, [1040,290])
         screen.blit(text_speed,[1080,340])
       
-def refreshButtons(robot, timer, goldButton, silverButton, bronzeButton, goldwishlistButton, silverwishlistButton, bronzewishlistButton, clearwishlistButton, speedplusButton, speedminusButton, pauseButton, menuButton,resetButton, quitButton):
+def refreshButtons(robot, timer, goldButton, silverButton, bronzeButton, goldwishlistButton, silverwishlistButton, bronzewishlistButton, clearwishlistButton, speedplusButton, speedminusButton, launchButton, pauseButton, menuButton,resetButton, quitButton):
         #update buttons
         goldButton.update(generate_treasure, gold)
         silverButton.update(generate_treasure, silver)
@@ -859,6 +861,7 @@ def refreshButtons(robot, timer, goldButton, silverButton, bronzeButton, goldwis
         speedminusButton.update(robot.adjustSpeed, -1)
         pauseButton.update(pause_movement, pauseButton)
         menuButton.update(main_menu, None)
+        launchButton.update(terminate, None)
         resetButton.update(main, None)
         quitButton.update(terminate, None)
             
