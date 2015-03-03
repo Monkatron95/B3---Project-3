@@ -103,7 +103,8 @@ class Robot(Block):
             except IndexError:
                 pass
             traps_left -=1
-            
+        if traps_left==4:
+            traps_left = generate_traps(random.randint(2, 6))
         if traps_left==0:
             traps_left = generate_traps(10)
             
