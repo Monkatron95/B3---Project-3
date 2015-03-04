@@ -90,8 +90,8 @@ class Robot(Block):
      
         #check collision
         traps_hit_list = pygame.sprite.spritecollide(self, trap_list, True)
+        
         treasure_hit = pygame.sprite.spritecollide(self, treasure_list, True)
-        found_list.add(treasure_hit)
         
         # Check the list of collisions.
         for trap in traps_hit_list:
@@ -110,13 +110,16 @@ class Robot(Block):
             
         for treasure in treasure_hit:
             self.treasuresound.play()
-            self.score += treasure.value
-            try:
-                if treasure.value == wish_list[0]:
-                    wish_list.pop(0)
-            except IndexError:
-                pass
-            
+            if len(found_list)<35:
+                found_list.add(treasure_hit)
+                self.score += treasure.value
+                try:
+                    if treasure.value == wish_list[0]:
+                        wish_list.pop(0)
+                except IndexError:
+                    pass
+            else:
+                print "max number of treasures reached"
     def radar(self):
         try:
             treasure_target = None
@@ -209,21 +212,24 @@ class SortingList():
         self.silver=pygame.image.load("resources/images/treasure_silver_small.gif")
         self.bronze=pygame.image.load("resources/images/treasure_bronze_small.gif")
     def update(self, items):
-        position=self.x+60        
+        xpos=self.x+60
+        ypos=self.y
         try:
                  for item in items:
-                     if position <1000:
+                         if xpos > 1200:
+                              ypos+=self.height+20
+                              xpos=self.x+60
                          try:
                              temp = item.value
                          except AttributeError:
                              temp=item
                          if temp == 300:
-                             screen.blit(self.gold ,(position,self.y))
+                             screen.blit(self.gold ,(xpos,ypos))
                          elif temp == 200:
-                             screen.blit(self.silver ,(position,self.y))
+                             screen.blit(self.silver ,(xpos,ypos))
                          elif temp==100:
-                             screen.blit(self.bronze ,(position,self.y))
-                         position=position+65
+                             screen.blit(self.bronze ,(xpos,ypos))
+                         xpos=xpos+65
         except IndexError:
                  pass
 
@@ -465,6 +471,9 @@ def main():
         #select and move treasures
         selectObjects(treasure_list)
 
+        #update GUI lists
+        FoundList.update(found_list)
+        WishList.update(wish_list)
         
         #pause function
         if pause is not True:
@@ -473,10 +482,6 @@ def main():
             #move robot
             robot.hunt()
         
-        #update GUI lists
-        FoundList.update(found_list)
-        WishList.update(wish_list)
-
         clock.tick(60)
         pygame.display.flip()
     return # End of main program
@@ -485,6 +490,7 @@ def main():
 
 def main_menu(): # main menu
     global screen, clock
+    pygame.mixer.music.stop()
     screen=pygame.display.set_mode((1280,720))
     pygame.display.set_caption("Treasure Hunter")
     clock = pygame.time.Clock()
@@ -625,7 +631,7 @@ class sorting_screen():
         self.quitButton= Button(1150, 525, 100, 30, "Quit",(204, 0, 0), 20 , (153, 0, 0), (102, 0, 0))
         self.menuButton= Button(1000, 525, 100, 30, "Main Menu  ",(204, 204, 204), 18 , (123, 123, 123), (70,130,180))
         self.backButton= Button(30, 525, 100, 30, "Back",(204, 204, 204),20, (123, 123, 123), (70,130,180))
-        self.display_sort = SortingList( 0, 350, 1280, 60)
+        self.display_sort = SortingList( 0, 330, 1280, 60)
         self.font = pygame.font.SysFont('Calibri', 60)
         self.text_title=self.font.render(self.title, True, (154,154,154))
         self.status_message_font=pygame.font.SysFont('Calibri', 20)
