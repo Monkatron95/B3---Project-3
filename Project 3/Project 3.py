@@ -373,11 +373,14 @@ class TrafficLight(Block):
     def DrawTrafficLight(self):
         black = (0, 0, 0)
         red = (255,0,0)
+        dullred = (205,92,92)
         amber = (255,215,0)
+        dullamber = (222,184,135)
         green = (50,205,50)
+        dullgreen = (152,251,152)
         pygame.draw.rect(screen, black, (self.x, self.y, 40, 89), 0)
-        pygame.draw.circle(screen, red, (1020, 20), 12, 0)
-        pygame.draw.circle(screen, amber, (1020, 45), 12, 0)
+        pygame.draw.circle(screen, dullred, (1020, 20), 12, 0)
+        pygame.draw.circle(screen, dullamber, (1020, 45), 12, 0)
         pygame.draw.circle(screen, green, (1020, 70), 12, 0)
             
 # -------- Main Program -----------
