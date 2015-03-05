@@ -372,6 +372,20 @@ class scoreboard():
         pygame.draw.rect(screen, self.color,(self.x-2,self.y,self.width,self.height))
         score = self.font.render(str(value), True, (255,255,255))
         screen.blit(score, [self.x, self.y])
+
+class TrafficLight(Block):
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+    def DrawTrafficLight(self):
+        black = (0, 0, 0)
+        red = (255,0,0)
+        amber = (255,215,0)
+        green = (50,205,50)
+        pygame.draw.rect(screen, black, (self.x, self.y, 40, 89), 0)
+        pygame.draw.circle(screen, red, (1020, 20), 12, 0)
+        pygame.draw.circle(screen, amber, (1020, 45), 12, 0)
+        pygame.draw.circle(screen, green, (1020, 70), 12, 0)
             
 # -------- Main Program -----------
 def main():
@@ -412,6 +426,9 @@ def main():
     treasure_list = pygame.sprite.Group() # all treasures
     found_list=pygame.sprite.OrderedUpdates() # found treasures
     wish_list=[] # wish list
+
+    #declare traffic light
+    Light1 = TrafficLight(1000,1)
     
     # declare robot
     robot = Robot(0, "resources/images/robot.gif")
@@ -484,6 +501,7 @@ def main():
         
         clock.tick(60)
         pygame.display.flip()
+        Light1.DrawTrafficLight() #Draws Traffic Light
     return # End of main program
 
 #other stages
