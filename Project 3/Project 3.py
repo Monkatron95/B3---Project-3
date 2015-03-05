@@ -47,31 +47,23 @@ class Robot(Block):
         self.treasuresound.set_volume(0.3)
         self.trapsound= pygame.mixer.Sound("resources/sounds/trap.ogg")
         self.trapsound.set_volume(0.5)
+        
     def hunt(self):
         self.checkForCollision()
         try:
-            try:
-                 treasure_target = treasure_list.sprites()[0]
-            except ValueError:
-                treasure_target = treasure_list.sprites()[0]
-            if treasure_target is not None:
-                if wish_list:
-                        for treasure in treasure_list:
-                            if treasure.value == wish_list[0]:
-                                target=treasure
-                                break
-    
-                if abs(self.rect.x - treasure_target.rect.x)>=self.speed:
-                        if self.rect.x > treasure_target.rect.x:
+            target = self.radar()
+            if target is not None:
+                if abs(self.rect.x - target.rect.x)>=self.speed:
+                        if self.rect.x > target.rect.x:
                             self.rect.x -=self.speed
-                        elif self.rect.x < treasure_target.rect.x:
+                        elif self.rect.x < target.rect.x:
                             self.rect.x +=self.speed
                 else:
                         self.rect.x += 0
-                if abs(self.rect.y - treasure_target.rect.y)>=self.speed:
-                        if self.rect.y > treasure_target.rect.y:
+                if abs(self.rect.y - target.rect.y)>=self.speed:
+                        if self.rect.y > target.rect.y:
                             self.rect.y -=self.speed
-                        elif self.rect.y < treasure_target.rect.y:
+                        elif self.rect.y < target.rect.y:
                             self.rect.y +=self.speed
                 else:
                         self.rect.y += 0
@@ -120,25 +112,26 @@ class Robot(Block):
                     pass
             else:
                 print "max number of treasures reached"
+                
+    def checkWishList(self, value):
+        if wish_list:
+            if value != wish_list[0]:
+                return False
+        return True
+    
     def radar(self):
+        target = None
         try:
-            treasure_target = None
-            minimum_distance = 9999.99
-            iterations=0
-            #print treasure_list
-            for i in range (-1,len(treasure_list.sprites())):
-                    distance = math.sqrt(math.pow((treasure_list.sprites()[i].rect.x-self.rect.x),2)+math.pow((treasure_list.sprites()[i].rect.y-self.rect.y),2))
-                    #print distance
-                    print min(distance, minimum_distance)
-                    if distance < minimum_distance :
-                        if minimum_distance is not 9999.99:
-                            print "min found"
-                        treasure_target=treasure_list.sprites()[i]
-                        minumum_distance=distance
-            #print iterations
+            minimum_distance = None
+            for treasure in treasure_list:
+                    distance = math.sqrt(math.pow((treasure.rect.x-self.rect.x),2)+math.pow((treasure.rect.y-self.rect.y),2))
+                    if (distance < minimum_distance or minimum_distance == None) and self.checkWishList(treasure.value):
+                        target=treasure
+                        minimum_distance=distance
         except IndexError:
             pass
-        return treasure_target
+        return target
+    
 class Button():
     def __init__(self, x, y, width, height, text, text_color, text_size, color, active_color):
         self.x=x
