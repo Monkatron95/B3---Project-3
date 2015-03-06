@@ -186,6 +186,33 @@ class Button():
         screen.blit(self.text_full, [self.x+(self.width/2-self.text_size*(len(self.text)/4.8)), self.y+(self.height/5)])
             
 
+########################################################
+def LuckySearch():
+
+    j1 = random.randint(0,4)
+    j2 = random.randint(0,4)
+    j3 = random.randint(0,4)
+    
+    
+    #ColourChange(j1, Bar3)
+    #ColourChange(j2, Bar2)
+    #ColourChange(j3, Bar1)
+    
+  
+    if j1 == j2 == j3:
+        print 'jackpot'        
+
+    elif j1== j2 or j2 == j3:
+        print '2 in a row'
+
+    else:
+        print 'unlucky'
+        
+    #time.sleep(0.5)
+    
+    #reset(Bar1, Bar2, Bar3)
+###################################################       
+  
 class TreasureList():
     
     def __init__(self, x, y, width, height, text, color):
@@ -477,11 +504,14 @@ def main():
 
     speedplusButton= Button(1180, 370, 30, 30, "+", (204, 204, 204), 20 , (123, 123, 123), (102, 102, 102))
     speedminusButton= Button(1080, 370, 30, 30,  "-", (204, 204, 204), 20 , (123, 123, 123), (102, 102, 102))
-    
-    pauseButton= Button(1020, 660, 80, 30, "Pause", (204, 204, 204), 20 , (123, 123, 123), (102, 102, 102))
-    menuButton= Button(1020, 570, 240, 30, "Main Menu  ", (204, 204, 204), 20 , (123, 123, 123), (102, 102, 102))
-    resetButton= Button(1020, 610, 240, 30, "Reset", (204, 204, 204), 20 , (123, 123, 123), (102, 102, 102)) 
-    quitButton= Button(1180, 660, 80, 30, "Quit", (204, 0, 0), 20 , (153, 0, 0), (102, 0, 0))
+
+    gambleButton= Button(1020, 560, 240, 30, "Gamble", (204, 204, 204), 20 , (123, 123, 123), (102, 102, 102)) 
+
+    menuButton= Button(1020, 600, 240, 30, "Main Menu  ", (204, 204, 204), 20 , (123, 123, 123), (102, 102, 102))
+    resetButton= Button(1020, 640, 240, 30, "Reset", (204, 204, 204), 20 , (123, 123, 123), (102, 102, 102))
+
+    pauseButton= Button(1020, 680, 80, 30, "Pause", (204, 204, 204), 20 , (123, 123, 123), (102, 102, 102))
+    quitButton= Button(1180, 680, 80, 30, "Quit", (204, 0, 0), 20 , (153, 0, 0), (102, 0, 0))
 
     FoundList=TreasureList( 0, 0, 1000, 20, small_font.render("found treasures", True, (100,100,100)), (60,60,60))
     WishList=TreasureList( 0, 700, 1000, 20, small_font.render("wishlist", True, (100,100,100)), (60,60,60))
@@ -497,7 +527,7 @@ def main():
 
         #update screen and screen items
         refreshScreen(treasure_map)#, text_add, text_score, text_wishlist, text_timer,text_speed)
-        refreshButtons(robot, bomb, timer, goldButton, silverButton, bronzeButton, goldwishlistButton, silverwishlistButton, bronzewishlistButton,clearwishlistButton, speedplusButton, speedminusButton, launchButton, pauseButton, menuButton,resetButton, quitButton)
+        refreshButtons(robot, bomb, timer, goldButton, silverButton, bronzeButton, goldwishlistButton, silverwishlistButton, bronzewishlistButton,clearwishlistButton, speedplusButton, speedminusButton, launchButton, pauseButton, menuButton,resetButton, quitButton, gambleButton)
 
         displaySpeed(robot,button_font)
         #update music player
@@ -898,7 +928,7 @@ def writeText(text_add, text_score, text_wishlist, text_timer, text_speed):
         screen.blit(text_timer, [1040,290])
         screen.blit(text_speed,[1080,340])
       
-def refreshButtons(robot, bomb, timer, goldButton, silverButton, bronzeButton, goldwishlistButton, silverwishlistButton, bronzewishlistButton, clearwishlistButton, speedplusButton, speedminusButton, launchButton, pauseButton, menuButton,resetButton, quitButton):
+def refreshButtons(robot, bomb, timer, goldButton, silverButton, bronzeButton, goldwishlistButton, silverwishlistButton, bronzewishlistButton, clearwishlistButton, speedplusButton, speedminusButton, launchButton, pauseButton, menuButton,resetButton, quitButton,gambleButton):
         #update buttons
         goldButton.update(generate_treasure, gold)
         silverButton.update(generate_treasure, silver)
@@ -914,6 +944,7 @@ def refreshButtons(robot, bomb, timer, goldButton, silverButton, bronzeButton, g
         launchButton.update(bomb.create, None)
         resetButton.update(main, None)
         quitButton.update(terminate, None)
+        gambleButton.update(LuckySearch, None)
             
 def selectObjects(object_list):
             global Target, MouseDown, MousePressed, MouseReleased, running
