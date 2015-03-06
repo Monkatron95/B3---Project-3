@@ -390,56 +390,22 @@ class scoreboard():
         screen.blit(score, [self.x, self.y])
 
 class TrafficLight(Block):
-    def __init__(self, x, y, state):
-        self.black = (0, 0, 0)
-        self.red = (255,0,0)
-        self.dullred = (205,92,92)
-        self.amber = (255,215,0)
-        self.dullamber = (222,184,135)
-        self.green = (50,205,50)
-        self.dullgreen = (152,251,152)
+    def __init__(self, x, y):
         self.x = x
         self.y = y
-        self.state = state
-        self.greenlight = self.green
-        self.yellowlight=self.dullamber
-        self.redlight=self.dullred
-    def DrawTrafficLight(self, robot, timer):
-        self.Light(robot, timer)
-        pygame.draw.rect(screen, self.black, (self.x, self.y, 40, 89), 0)
-        pygame.draw.circle(screen, self.redlight, (1020, 20), 12, 0)
-        pygame.draw.circle(screen, self.yellowlight, (1020, 45), 12, 0)
-        pygame.draw.circle(screen, self.greenlight, (1020, 70), 12, 0)
-    def Light(self, robot, timer):
-        global RedLight
-        x = pygame.time.get_ticks()/1000
-        if x==(random.randint(5, 17)):
-            self.state = 2
-            robot.speed = 1
-        elif x==(random.randint(18, 34)):
-            self.state = 3
-        elif x==(random.randint(35, 48)):
-            self.state = 4
-            robot.speed = 1
-        elif x==(random.randint(49, 60)):
-            self.state = 5
-        if self.state == 2:
-            self.yellowlight= self.amber
-            self.greenlight=self.dullgreen
-        if self.state == 3:
-            self.yellowlight = self.dullamber
-            self.redlight = self.red
-            RedLight = True
-        if self.state == 4:
-            self.yellowlight = self.amber
-            RedLight = False
-        if self.state == 5:
-            self.redlight = self.dullred
-            self.yellowlight = self.dullamber
-            self.greenlight = self.green
-            RedLight = False
-
-
+    def DrawTrafficLight(self):
+        black = (0, 0, 0)
+        red = (255,0,0)
+        dullred = (205,92,92)
+        amber = (255,215,0)
+        dullamber = (222,184,135)
+        green = (50,205,50)
+        dullgreen = (152,251,152)
+        pygame.draw.rect(screen, black, (self.x, self.y, 40, 89), 0)
+        pygame.draw.circle(screen, dullred, (1020, 20), 12, 0)
+        pygame.draw.circle(screen, dullamber, (1020, 45), 12, 0)
+        pygame.draw.circle(screen, green, (1020, 70), 12, 0)
+            
 # -------- Main Program -----------
 def main():
     #clear screen
@@ -459,10 +425,9 @@ def main():
     
     
     #declare other stuff
-    global Target, pause, RedLight
+    global Target, pause
     Target=None # target of Drag/Drop
     pause = False
-    RedLight = False
 
     #declare fonts
     font = pygame.font.SysFont('Calibri', 25)
@@ -483,7 +448,7 @@ def main():
     wish_list=[] # wish list
 
     #declare traffic light
-    Light1 = TrafficLight(1000,1, 1)
+    Light1 = TrafficLight(1000,1)
     
     # declare robot
     robot = Robot(0, "resources/images/robot.gif")
@@ -556,13 +521,12 @@ def main():
             timer.update()
             #update bomb
             bomb.update(robot)
-            if RedLight is not True:
-                #move robot
-                robot.hunt()
-                
+            #move robot
+            robot.hunt()
+        
         clock.tick(60)
         pygame.display.flip()
-        Light1.DrawTrafficLight(robot, timer) #Draws Traffic Light
+        Light1.DrawTrafficLight() #Draws Traffic Light
     return # End of main program
 
 #other stages
