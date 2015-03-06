@@ -27,7 +27,30 @@ class Block(pygame.sprite.Sprite):
         # Update the position of this object by setting the values 
         # of rect.x and rect.y
         self.rect = self.image.get_rect()
+
+class Bomb (Block):
+    def __init__(self):
+        super(Bomb, self).__init__("resources/images/bomb.gif")
+        self.exists = False
         
+    def update (self, robot):
+        if self.exists:
+            self.rect.y += self.speed
+            hit = pygame.sprite.spritecollide(robot, bomb_list, True)
+            if hit:
+                robot.score=robot.score/2
+            if self.rect.y>700:
+                all_sprites_list.remove(self)
+                self.exists=False
+                
+    def create(self):
+        self.rect.x = random.randrange(100,900)
+        self.rect.y = -100
+        self.speed = random.randrange(1,10)
+        self.exists = True
+        all_sprites_list.add(self)
+        bomb_list.add(self)
+                
 class Trap(Block):
     def __init__(self, filename):
         self.value=-50
@@ -416,11 +439,12 @@ def main():
     timer =  Timer( 1170, 280, 300, 100, (0,0,0))
     timer.start_time=pygame.time.get_ticks()
     #declare lists
-    global all_sprites_list, trap_list, treasure_list, found_list, wish_list
+    global all_sprites_list, trap_list, treasure_list, found_list, wish_list, bomb_list
     all_sprites_list = pygame.sprite.Group() # all sprites
     trap_list = pygame.sprite.Group() # all traps
     treasure_list = pygame.sprite.Group() # all treasures
     found_list=pygame.sprite.OrderedUpdates() # found treasures
+    bomb_list = pygame.sprite.Group()# all bombs
     wish_list=[] # wish list
 
     #declare traffic light
@@ -463,14 +487,17 @@ def main():
     WishList=TreasureList( 0, 700, 1000, 20, small_font.render("wishlist", True, (100,100,100)), (60,60,60))
 
     launchButton= Button(1020, 410, 240, 30, "Launch", (204, 204, 204), 20 , (123, 123, 123), (102, 102, 102))
-
+    # declare Bomb
+    bomb = Bomb()
+    
     musicPlayer=music_player(1015, 450, 250, 100, (172,172,172))
-    score=scoreboard(1100,60, 100, 24)    
+    score=scoreboard(1100,60, 100, 24)
+    
     while True:
 
         #update screen and screen items
         refreshScreen(treasure_map)#, text_add, text_score, text_wishlist, text_timer,text_speed)
-        refreshButtons(robot, timer, goldButton, silverButton, bronzeButton, goldwishlistButton, silverwishlistButton, bronzewishlistButton,clearwishlistButton, speedplusButton, speedminusButton, launchButton, pauseButton, menuButton,resetButton, quitButton)
+        refreshButtons(robot, bomb, timer, goldButton, silverButton, bronzeButton, goldwishlistButton, silverwishlistButton, bronzewishlistButton,clearwishlistButton, speedplusButton, speedminusButton, launchButton, pauseButton, menuButton,resetButton, quitButton)
 
         displaySpeed(robot,button_font)
         #update music player
@@ -492,6 +519,8 @@ def main():
         if pause is not True:
             #update timer
             timer.update()
+            #update bomb
+            bomb.update(robot)
             #move robot
             robot.hunt()
         
@@ -869,7 +898,7 @@ def writeText(text_add, text_score, text_wishlist, text_timer, text_speed):
         screen.blit(text_timer, [1040,290])
         screen.blit(text_speed,[1080,340])
       
-def refreshButtons(robot, timer, goldButton, silverButton, bronzeButton, goldwishlistButton, silverwishlistButton, bronzewishlistButton, clearwishlistButton, speedplusButton, speedminusButton, launchButton, pauseButton, menuButton,resetButton, quitButton):
+def refreshButtons(robot, bomb, timer, goldButton, silverButton, bronzeButton, goldwishlistButton, silverwishlistButton, bronzewishlistButton, clearwishlistButton, speedplusButton, speedminusButton, launchButton, pauseButton, menuButton,resetButton, quitButton):
         #update buttons
         goldButton.update(generate_treasure, gold)
         silverButton.update(generate_treasure, silver)
@@ -882,7 +911,7 @@ def refreshButtons(robot, timer, goldButton, silverButton, bronzeButton, goldwis
         speedminusButton.update(robot.adjustSpeed, -1)
         pauseButton.update(pause_movement, pauseButton)
         menuButton.update(main_menu, None)
-        launchButton.update(terminate, None)
+        launchButton.update(bomb.create, None)
         resetButton.update(main, None)
         quitButton.update(terminate, None)
             
