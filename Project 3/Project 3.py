@@ -27,7 +27,30 @@ class Block(pygame.sprite.Sprite):
         # Update the position of this object by setting the values 
         # of rect.x and rect.y
         self.rect = self.image.get_rect()
+
+class Bomb (Block):
+    def __init__(self):
+        super(Bomb, self).__init__("resources/images/bomb.gif")
+        self.exists = False
         
+    def update (self, robot):
+        if self.exists:
+            self.rect.y += self.speed
+            hit = pygame.sprite.spritecollide(robot, bomb_list, True)
+            if hit:
+                robot.score=robot.score/2
+            if self.rect.y>700:
+                all_sprites_list.remove(self)
+                self.exists=False
+                
+    def create(self):
+        self.rect.x = random.randrange(100,900)
+        self.rect.y = -100
+        self.speed = random.randrange(1,10)
+        self.exists = True
+        all_sprites_list.add(self)
+        bomb_list.add(self)
+                
 class Trap(Block):
     def __init__(self, filename):
         self.value=-50
@@ -47,31 +70,23 @@ class Robot(Block):
         self.treasuresound.set_volume(0.3)
         self.trapsound= pygame.mixer.Sound("resources/sounds/trap.ogg")
         self.trapsound.set_volume(0.5)
+        
     def hunt(self):
         self.checkForCollision()
         try:
-            try:
-                 treasure_target = treasure_list.sprites()[0]
-            except ValueError:
-                treasure_target = treasure_list.sprites()[0]
-            if treasure_target is not None:
-                if wish_list:
-                        for treasure in treasure_list:
-                            if treasure.value == wish_list[0]:
-                                target=treasure
-                                break
-    
-                if abs(self.rect.x - treasure_target.rect.x)>=self.speed:
-                        if self.rect.x > treasure_target.rect.x:
+            target = self.radar()
+            if target is not None:
+                if abs(self.rect.x - target.rect.x)>=self.speed:
+                        if self.rect.x > target.rect.x:
                             self.rect.x -=self.speed
-                        elif self.rect.x < treasure_target.rect.x:
+                        elif self.rect.x < target.rect.x:
                             self.rect.x +=self.speed
                 else:
                         self.rect.x += 0
-                if abs(self.rect.y - treasure_target.rect.y)>=self.speed:
-                        if self.rect.y > treasure_target.rect.y:
+                if abs(self.rect.y - target.rect.y)>=self.speed:
+                        if self.rect.y > target.rect.y:
                             self.rect.y -=self.speed
-                        elif self.rect.y < treasure_target.rect.y:
+                        elif self.rect.y < target.rect.y:
                             self.rect.y +=self.speed
                 else:
                         self.rect.y += 0
@@ -90,8 +105,8 @@ class Robot(Block):
      
         #check collision
         traps_hit_list = pygame.sprite.spritecollide(self, trap_list, True)
+        
         treasure_hit = pygame.sprite.spritecollide(self, treasure_list, True)
-        found_list.add(treasure_hit)
         
         # Check the list of collisions.
         for trap in traps_hit_list:
@@ -104,38 +119,42 @@ class Robot(Block):
                 pass
             traps_left -=1
         if traps_left==4:
-            traps_left = generate_traps(random.randint(2, 6))
+            traps_left = traps_left + generate_traps(random.randint(2, 6))
         if traps_left==0:
             traps_left = generate_traps(10)
             
         for treasure in treasure_hit:
             self.treasuresound.play()
-            self.score += treasure.value
-            try:
-                if treasure.value == wish_list[0]:
-                    wish_list.pop(0)
-            except IndexError:
-                pass
-            
+            if len(found_list)<35:
+                found_list.add(treasure_hit)
+                self.score += treasure.value
+                try:
+                    if treasure.value == wish_list[0]:
+                        wish_list.pop(0)
+                except IndexError:
+                    pass
+            else:
+                print "max number of treasures reached"
+                
+    def checkWishList(self, value):
+        if wish_list:
+            if value != wish_list[0]:
+                return False
+        return True
+    
     def radar(self):
+        target = None
         try:
-            treasure_target = None
-            minimum_distance = 9999.99
-            iterations=0
-            #print treasure_list
-            for i in range (-1,len(treasure_list.sprites())):
-                    distance = math.sqrt(math.pow((treasure_list.sprites()[i].rect.x-self.rect.x),2)+math.pow((treasure_list.sprites()[i].rect.y-self.rect.y),2))
-                    #print distance
-                    print min(distance, minimum_distance)
-                    if distance < minimum_distance :
-                        if minimum_distance is not 9999.99:
-                            print "min found"
-                        treasure_target=treasure_list.sprites()[i]
-                        minumum_distance=distance
-            #print iterations
+            minimum_distance = None
+            for treasure in treasure_list:
+                    distance = math.sqrt(math.pow((treasure.rect.x-self.rect.x),2)+math.pow((treasure.rect.y-self.rect.y),2))
+                    if (distance < minimum_distance or minimum_distance == None) and self.checkWishList(treasure.value):
+                        target=treasure
+                        minimum_distance=distance
         except IndexError:
             pass
-        return treasure_target
+        return target
+    
 class Button():
     def __init__(self, x, y, width, height, text, text_color, text_size, color, active_color):
         self.x=x
@@ -209,21 +228,24 @@ class SortingList():
         self.silver=pygame.image.load("resources/images/treasure_silver_small.gif")
         self.bronze=pygame.image.load("resources/images/treasure_bronze_small.gif")
     def update(self, items):
-        position=self.x+60        
+        xpos=self.x+60
+        ypos=self.y
         try:
                  for item in items:
-                     if position <1000:
+                         if xpos > 1200:
+                              ypos+=self.height+20
+                              xpos=self.x+60
                          try:
                              temp = item.value
                          except AttributeError:
                              temp=item
                          if temp == 300:
-                             screen.blit(self.gold ,(position,self.y))
+                             screen.blit(self.gold ,(xpos,ypos))
                          elif temp == 200:
-                             screen.blit(self.silver ,(position,self.y))
+                             screen.blit(self.silver ,(xpos,ypos))
                          elif temp==100:
-                             screen.blit(self.bronze ,(position,self.y))
-                         position=position+65
+                             screen.blit(self.bronze ,(xpos,ypos))
+                         xpos=xpos+65
         except IndexError:
                  pass
 
@@ -366,7 +388,58 @@ class scoreboard():
         pygame.draw.rect(screen, self.color,(self.x-2,self.y,self.width,self.height))
         score = self.font.render(str(value), True, (255,255,255))
         screen.blit(score, [self.x, self.y])
-            
+
+class TrafficLight(Block):
+    def __init__(self, x, y, state):
+        self.black = (0, 0, 0)
+        self.red = (255,0,0)
+        self.dullred = (205,92,92)
+        self.amber = (255,215,0)
+        self.dullamber = (222,184,135)
+        self.green = (50,205,50)
+        self.dullgreen = (152,251,152)
+        self.x = x
+        self.y = y
+        self.state = state
+        self.greenlight = self.green
+        self.yellowlight=self.dullamber
+        self.redlight=self.dullred
+    def DrawTrafficLight(self, robot, timer):
+        self.Light(robot, timer)
+        pygame.draw.rect(screen, self.black, (self.x, self.y, 40, 89), 0)
+        pygame.draw.circle(screen, self.redlight, (1020, 20), 12, 0)
+        pygame.draw.circle(screen, self.yellowlight, (1020, 45), 12, 0)
+        pygame.draw.circle(screen, self.greenlight, (1020, 70), 12, 0)
+    def Light(self, robot, timer):
+        global RedLight
+        x = pygame.time.get_ticks()/1000
+        if x==(random.randint(5, 17)):
+            self.state = 2
+            robot.speed = 1
+        elif x==(random.randint(18, 34)):
+            self.state = 3
+        elif x==(random.randint(35, 48)):
+            self.state = 4
+            robot.speed = 1
+        elif x==(random.randint(49, 60)):
+            self.state = 5
+        if self.state == 2:
+            self.yellowlight= self.amber
+            self.greenlight=self.dullgreen
+        if self.state == 3:
+            self.yellowlight = self.dullamber
+            self.redlight = self.red
+            RedLight = True
+        if self.state == 4:
+            self.yellowlight = self.amber
+            RedLight = False
+        if self.state == 5:
+            self.redlight = self.dullred
+            self.yellowlight = self.dullamber
+            self.greenlight = self.green
+            RedLight = False
+
+
 # -------- Main Program -----------
 def main():
     #clear screen
@@ -386,9 +459,10 @@ def main():
     
     
     #declare other stuff
-    global Target, pause
+    global Target, pause, RedLight
     Target=None # target of Drag/Drop
     pause = False
+    RedLight = False
 
     #declare fonts
     font = pygame.font.SysFont('Calibri', 25)
@@ -400,12 +474,16 @@ def main():
     timer =  Timer( 1170, 280, 300, 100, (0,0,0))
     timer.start_time=pygame.time.get_ticks()
     #declare lists
-    global all_sprites_list, trap_list, treasure_list, found_list, wish_list
+    global all_sprites_list, trap_list, treasure_list, found_list, wish_list, bomb_list
     all_sprites_list = pygame.sprite.Group() # all sprites
     trap_list = pygame.sprite.Group() # all traps
     treasure_list = pygame.sprite.Group() # all treasures
     found_list=pygame.sprite.OrderedUpdates() # found treasures
+    bomb_list = pygame.sprite.Group()# all bombs
     wish_list=[] # wish list
+
+    #declare traffic light
+    Light1 = TrafficLight(1000,1, 1)
     
     # declare robot
     robot = Robot(0, "resources/images/robot.gif")
@@ -444,14 +522,17 @@ def main():
     WishList=TreasureList( 0, 700, 1000, 20, small_font.render("wishlist", True, (100,100,100)), (60,60,60))
 
     launchButton= Button(1020, 410, 240, 30, "Launch", (204, 204, 204), 20 , (123, 123, 123), (102, 102, 102))
-
+    # declare Bomb
+    bomb = Bomb()
+    
     musicPlayer=music_player(1015, 450, 250, 100, (172,172,172))
-    score=scoreboard(1100,60, 100, 24)    
+    score=scoreboard(1100,60, 100, 24)
+    
     while True:
 
         #update screen and screen items
         refreshScreen(treasure_map)#, text_add, text_score, text_wishlist, text_timer,text_speed)
-        refreshButtons(robot, timer, goldButton, silverButton, bronzeButton, goldwishlistButton, silverwishlistButton, bronzewishlistButton,clearwishlistButton, speedplusButton, speedminusButton, launchButton, pauseButton, menuButton,resetButton, quitButton)
+        refreshButtons(robot, bomb, timer, goldButton, silverButton, bronzeButton, goldwishlistButton, silverwishlistButton, bronzewishlistButton,clearwishlistButton, speedplusButton, speedminusButton, launchButton, pauseButton, menuButton,resetButton, quitButton)
 
         displaySpeed(robot,button_font)
         #update music player
@@ -465,26 +546,30 @@ def main():
         #select and move treasures
         selectObjects(treasure_list)
 
+        #update GUI lists
+        FoundList.update(found_list)
+        WishList.update(wish_list)
         
         #pause function
         if pause is not True:
             #update timer
             timer.update()
-            #move robot
-            robot.hunt()
-        
-        #update GUI lists
-        FoundList.update(found_list)
-        WishList.update(wish_list)
-
+            #update bomb
+            bomb.update(robot)
+            if RedLight is not True:
+                #move robot
+                robot.hunt()
+                
         clock.tick(60)
         pygame.display.flip()
+        Light1.DrawTrafficLight(robot, timer) #Draws Traffic Light
     return # End of main program
 
 #other stages
 
 def main_menu(): # main menu
     global screen, clock
+    pygame.mixer.music.stop()
     screen=pygame.display.set_mode((1280,720))
     pygame.display.set_caption("Treasure Hunter")
     clock = pygame.time.Clock()
@@ -625,7 +710,7 @@ class sorting_screen():
         self.quitButton= Button(1150, 525, 100, 30, "Quit",(204, 0, 0), 20 , (153, 0, 0), (102, 0, 0))
         self.menuButton= Button(1000, 525, 100, 30, "Main Menu  ",(204, 204, 204), 18 , (123, 123, 123), (70,130,180))
         self.backButton= Button(30, 525, 100, 30, "Back",(204, 204, 204),20, (123, 123, 123), (70,130,180))
-        self.display_sort = SortingList( 0, 350, 1280, 60)
+        self.display_sort = SortingList( 0, 330, 1280, 60)
         self.font = pygame.font.SysFont('Calibri', 60)
         self.text_title=self.font.render(self.title, True, (154,154,154))
         self.status_message_font=pygame.font.SysFont('Calibri', 20)
@@ -849,7 +934,7 @@ def writeText(text_add, text_score, text_wishlist, text_timer, text_speed):
         screen.blit(text_timer, [1040,290])
         screen.blit(text_speed,[1080,340])
       
-def refreshButtons(robot, timer, goldButton, silverButton, bronzeButton, goldwishlistButton, silverwishlistButton, bronzewishlistButton, clearwishlistButton, speedplusButton, speedminusButton, launchButton, pauseButton, menuButton,resetButton, quitButton):
+def refreshButtons(robot, bomb, timer, goldButton, silverButton, bronzeButton, goldwishlistButton, silverwishlistButton, bronzewishlistButton, clearwishlistButton, speedplusButton, speedminusButton, launchButton, pauseButton, menuButton,resetButton, quitButton):
         #update buttons
         goldButton.update(generate_treasure, gold)
         silverButton.update(generate_treasure, silver)
@@ -862,7 +947,7 @@ def refreshButtons(robot, timer, goldButton, silverButton, bronzeButton, goldwis
         speedminusButton.update(robot.adjustSpeed, -1)
         pauseButton.update(pause_movement, pauseButton)
         menuButton.update(main_menu, None)
-        launchButton.update(terminate, None)
+        launchButton.update(bomb.create, None)
         resetButton.update(main, None)
         quitButton.update(terminate, None)
             
