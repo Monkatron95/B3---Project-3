@@ -141,6 +141,13 @@ class Robot(Block):
             if value != wish_list[0]:
                 return False
         return True
+
+    def wishExists(self):
+        if wish_list:
+            for treasure in treasure_list:
+                if treasure.value == wish_list[0]:
+                    return True
+        return False
     
     def radar(self):
         target = None
@@ -148,9 +155,10 @@ class Robot(Block):
             minimum_distance = None
             for treasure in treasure_list:
                     distance = math.sqrt(math.pow((treasure.rect.x-self.rect.x),2)+math.pow((treasure.rect.y-self.rect.y),2))
-                    if (distance < minimum_distance or minimum_distance == None) and self.checkWishList(treasure.value):
-                        target=treasure
-                        minimum_distance=distance
+                    if (distance < minimum_distance or minimum_distance == None) and (self.checkWishList(treasure.value) or not self.wishExists()):
+                            target=treasure
+                            minimum_distance=distance
+
         except IndexError:
             pass
         return target
@@ -553,10 +561,11 @@ def main():
             bomb.update(robot)
             #move robot
             robot.hunt()
-        
+            
+        Light1.DrawTrafficLight() #Draws Traffic Light
         clock.tick(60)
         pygame.display.flip()
-        Light1.DrawTrafficLight() #Draws Traffic Light
+        
     return # End of main program
 
 #other stages
@@ -666,7 +675,6 @@ def select_sorting(option):
         quick_sortButton.update(sort, (quick_sortButton.text, "quick", option))
         insertion_sortButton.update(sort, (insertion_sortButton.text, "insertion", option))
         selection_sortButton.update(sort, (selection_sortButton.text, "selection", option))
-        #heap_sortButton.update(sort, (heap_sortButton.text, "heap", option))
         merge_sortButton.update(sort, (merge_sortButton.text, "merge", option))
         checkForEvents(None)
         clock.tick(60)
@@ -687,8 +695,6 @@ def sort(sort_type):
                 sortingScreen.insertion_sort(sorting_list,sort_type[2] )
             elif sort_type[1] is "selection":
                 sortingScreen.selection_sort(sorting_list,sort_type[2] )
-            #elif sort_type[1] is "heap":
-            #    sortingScreen.heap_sort(sorting_list,sort_type[2] )
             elif sort_type[1] is "merge":
                 sortingScreen.merge_sort(sorting_list,sort_type[2], 0, len(sorting_list)) 
             isSorted=True
@@ -821,8 +827,6 @@ class sorting_screen():
                 time.sleep(1) 
             else:
                 left += 1
-       
-
      
         
 #functions
