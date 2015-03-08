@@ -1,5 +1,5 @@
 #import libraries
-import pygame, os, sys, random, time, copy, heapq, math
+import pygame, os, sys, random, time, copy, math
 from pygame.locals import *
 
 # Initialize the game engine
@@ -14,19 +14,44 @@ class Block(pygame.sprite.Sprite):
 
         # Create an image of the block, and fill it with a color.
         # This could also be an image loaded from the disk.
-        self.image = pygame.image.load(filename).convert()
-
+        if filename is not None:
+            self.image = pygame.image.load(filename).convert()
+            self.image.set_colorkey((255,255,255))
+            self.rect = self.image.get_rect()
         self.filename=filename
         
         # Set background color to be transparent. Adjust to WHITE if your
         # background is WHITE.
-        self.image.set_colorkey((255,255,255))
+        
 
         # Fetch the rectangle object that has the dimensions of the image
         # image.
         # Update the position of this object by setting the values 
         # of rect.x and rect.y
-        self.rect = self.image.get_rect()
+        
+
+class Sphere(Block): 
+
+    def __init__(self, color, radius, location):
+        super(Sphere, self).__init__(None)
+        self.frame = pygame.Surface ((radius*2, radius*2))
+        self.frame.fill ((200,200,200))
+        pygame.draw.circle(self.frame, color, (radius, radius), radius) 
+        self.rect = self.frame.get_rect()
+        self.rect.topleft = location
+        self.speed = [2,2]
+
+    def moveSpheres(self, windowSize): 
+        self.rect = self.rect.move(self.speed)
+        if self.rect.left < 0 or self.rect.right > windowSize[0]:
+            self.speed[0] = -self.speed[0] 
+        if self.rect.top < 0 or self.rect.bottom > windowSize[1]:
+            self.speed[1] = -self.speed[1]
+
+    def collide(self, group1):
+        if pygame.sprite.spritecollide(self, group1, False):
+            self.speed[0] = -self.speed[0]
+            self.speed[1] = -self.speed[1]
 
 class Bomb (Block):
     def __init__(self):
@@ -440,6 +465,9 @@ class TrafficLight(Block):
         pygame.draw.circle(screen, dullred, (1020, 20), 12, 0)
         pygame.draw.circle(screen, dullamber, (1020, 45), 12, 0)
         pygame.draw.circle(screen, green, (1020, 70), 12, 0)
+
+
+
             
 # -------- Main Program -----------
 def main():
@@ -576,10 +604,23 @@ def main_menu(): # main menu
     screen=pygame.display.set_mode((1280,720))
     pygame.display.set_caption("Treasure Hunter")
     clock = pygame.time.Clock()
+    #sphere creation
+    spheres = pygame.sprite.Group()
+     
+    amount = random.randint(5, 15)
 
+    for i in range (amount):
+        color = (random.randint(1, 255), random.randint(1, 255), random.randint(1, 255)) ##assign a random colour
+        radius = random.randint(20, 30)
+        x =random.randint(100, 1180)
+        y =random.randint(100, 620)
+        ball = Sphere(color, radius,(x,y))
+        spheres.add(ball)
+        
     #text
     font = pygame.font.SysFont('Calibri', 100)
     text_title=font.render("Treasure Hunter 3.0", True, (154,154,154))
+    
     #buttons
     startButton= Button(540, 340, 200, 60, "Start",(204, 204, 204),38, (123, 123, 123), (34,139,34))
     instructionsButton= Button(540, 420, 200, 60, "Instructions",(204, 204, 204),38, (123, 123, 123), (128,0,128))
@@ -593,9 +634,17 @@ def main_menu(): # main menu
     while True:
         screen.fill((200,200,200))
 
+        #move spheres
+        for ball in spheres:
+            ball.moveSpheres((1280,720))
+            spheres.remove(ball)
+            ball.collide(spheres)
+            spheres.add(ball)
+            screen.blit(ball.frame, ball.rect)
+            
         #update text
         screen.blit(text_title,[250,140])
-
+        
         #update buttons
         startButton.update(main, None)
         instructionsButton.update(instructions, None)
@@ -664,8 +713,7 @@ def select_sorting(option):
     quick_sortButton= Button(320, 325, 200, 50, "Quick Sort",(204, 204, 204),30, (123, 123, 123), (75,0,130))
     insertion_sortButton= Button(560, 325, 200, 50, "Insertion Sort",(204, 204, 204),30, (123, 123, 123), (72,61,139))
     selection_sortButton= Button(800, 325, 200, 50, "Selection Sort",(204, 204, 204),30, (123, 123, 123), (106,90,205))
-    heap_sortButton= Button(1040, 325, 200, 50, "Heap Sort",(204, 204, 204),30, (123, 123, 123), (123,104,238))
-    merge_sortButton= Button(80, 400, 200, 50, "Merge Sort",(204, 204, 204),30, (123, 123, 123), (147,112,219))
+    merge_sortButton= Button(1040, 325, 200, 50, "Merge Sort",(204, 204, 204),30, (123, 123, 123), (147,112,219))
     while True:
         pygame.draw.rect(screen, (200,200,200),(0,150,1280,420))
         #update text
