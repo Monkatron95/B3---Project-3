@@ -98,6 +98,8 @@ class Robot(Block):
         
     def hunt(self):
         self.checkForCollision()
+        if self.score<0:
+            self.score=0
         try:
             target = self.radar()
             if target is not None:
